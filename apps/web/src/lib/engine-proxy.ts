@@ -37,15 +37,11 @@ export function isLoopbackEngineUrl(url: string): boolean {
 }
 
 /**
- * 로컬 Next(개발)에서만 엔진 실패 시 웹→토스 직접 호출 허용.
- * Vercel 에서는 직접 호출이 IP 차단되므로 금지.
+ * 웹 → 토스 직접 호출 금지 (항상 엔진 경유).
+ * 비상 시에만 ENGINE_ALLOW_WEB_DIRECT=1 (비권장).
  */
 export function allowWebDirectToss(): boolean {
-  if (isRunningOnVercel()) return false
-  if (process.env.ENGINE_ALLOW_WEB_DIRECT === '0') return false
-  if (process.env.ENGINE_ALLOW_WEB_DIRECT === '1') return true
-  // 로컬 개발 기본 허용
-  return process.env.NODE_ENV !== 'production' || !isRunningOnVercel()
+  return process.env.ENGINE_ALLOW_WEB_DIRECT === '1'
 }
 
 export function engineMisconfigHelp(base: string): string {
@@ -79,7 +75,7 @@ export function engineMisconfigHelp(base: string): string {
 
 export async function engineFetchJson<T>(
   path: string,
-  init?: RequestInit
+  init?: RequestInit & { signal?: AbortSignal }
 ): Promise<EngineProxyResult<T>> {
   const base = engineBaseUrl()
 
@@ -98,7 +94,7 @@ export async function engineFetchJson<T>(
     const res = await fetch(url, {
       ...init,
       headers: { ...authHeaders(), ...(init?.headers as Record<string, string>) },
-      signal: AbortSignal.timeout(60_000)
+      signal: init?.signal ?? AbortSignal.timeout(60_000)
     })
     const data = (await res.json().catch(() => ({}))) as T & {
       ok?: boolean

@@ -25,6 +25,15 @@ Vercel (apps/web)  ──ENGINE_URL──►  상시 PC 엔진 (:8787)
 - [ ] Vercel 환경변수에 `ENGINE_URL` / `ENGINE_INTERNAL_SECRET` / 마스터키
 - [ ] (Vercel → 집 PC) Cloudflare Tunnel 또는 포트포워드+HTTPS
 
+### 토스 호출 경로 (필수)
+
+**웹(Vercel)은 토스 Open API 를 직접 호출하지 않습니다.**  
+차트·종목검색·연결테스트·보고서 시세 수집 모두:
+
+`Vercel → ENGINE_URL → 상시 PC 엔진 → 토스`
+
+엔진 폴링(시세·포트폴리오·주문)도 동일하게 엔진에서만 토스를 칩니다.
+
 ---
 
 ## 1. 상시 PC 준비

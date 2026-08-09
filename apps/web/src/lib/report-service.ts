@@ -1,97 +1,82 @@
-import {
-  TossClient,
-  writeMarketBrief,
-  writeStockBrief,
-  fetchNewsFeed,
-  type MarketReportResult,
-  type ReportKind,
-  type NewsFeedItem
-} from '@tosspilot/core'
+/**
+ * 보고서·뉴스.
+ * 토스 시세 수집이 필요한 보고서는 엔진 경유. 뉴스 RSS 는 토스 아님 → 웹에서 가능.
+ */
+import { fetchNewsFeed, type MarketReportResult, type NewsFeedItem, type ReportKind } from '@tosspilot/core'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { loadDecryptedCredentials } from '@/lib/credentials-store'
-
-async function tossClientForUser(userId: string): Promise<TossClient> {
-  const creds = await loadDecryptedCredentials(userId)
-  if (!creds) {
-    throw new Error('저장된 토스 API 자격증명이 없습니다. 설정에서 등록하세요.')
-  }
-  return new TossClient({
-    credentials: creds,
-    baseUrl: process.env.TOSS_BASE_URL || 'https://openapi.tossinvest.com'
-  })
-}
-
-async function saveReport(
-  userId: string,
-  result: MarketReportResult
-): Promise<string> {
-  const admin = createAdminClient()
-  const now = new Date().toISOString()
-  const { data, error } = await admin
-    .from('market_reports')
-    .insert({
-      user_id: userId,
-      kind: result.kind,
-      status: 'completed',
-      title: result.title,
-      body_markdown: result.bodyMarkdown,
-      provider: result.provider,
-      model: result.model,
-      kadara_count: result.kadaraCount,
-      payload: {
-        sources: result.sources,
-        evidence: result.evidence,
-        tables: result.tables,
-        symbol: result.symbol
-      },
-      created_at: now,
-      updated_at: now
-    })
-    .select('id')
-    .single()
-
-  if (error) throw new Error(error.message)
-  if (!data?.id) throw new Error('보고서 저장 실패')
-  return data.id as string
-}
+import { engineFetchJson } from '@/lib/engine-proxy'
 
 export async function generateMarketReportForUser(
   userId: string,
   kind: ReportKind = 'market_brief_both'
-): Promise<{ id: string; result: MarketReportResult }> {
+): Promise<{ id: string; result?: MarketReportResult; title?: string; provider?: string }> {
   if (kind === 'stock_brief') {
     throw new Error('종목 리포트는 symbol 과 함께 generateStockReportForUser 를 사용하세요')
   }
-  const client = await tossClientForUser(userId)
-  const result = await writeMarketBrief({
-    client,
-    kind,
-    env: process.env as Record<string, string | undefined>
+
+  const proxied = await engineFetchJson<{
+    ok: boolean
+    id?: string
+    title?: string
+    provider?: string
+    kind?: string
+    error?: string
+  }>('/internal/toss/report', {
+    method: 'POST',
+    body: JSON.stringify({ userId, kind }),
+    // 보고서 수집+LLM 은 시간 소요
+    signal: AbortSignal.timeout(180_000)
   })
-  const id = await saveReport(userId, result)
-  return { id, result }
+
+  if (!proxied.ok) {
+    throw new Error(proxied.error)
+  }
+  if (!proxied.data.ok || !proxied.data.id) {
+    throw new Error(proxied.data.error || '보고서 생성 실패')
+  }
+
+  return {
+    id: proxied.data.id,
+    title: proxied.data.title,
+    provider: proxied.data.provider
+  }
 }
 
 export async function generateStockReportForUser(
   userId: string,
   symbol: string
-): Promise<{ id: string; result: MarketReportResult }> {
-  const client = await tossClientForUser(userId)
-  const result = await writeStockBrief({
-    client,
-    symbol,
-    includeNewsFetch: true,
-    env: process.env as Record<string, string | undefined>
+): Promise<{ id: string; title?: string; provider?: string }> {
+  const proxied = await engineFetchJson<{
+    ok: boolean
+    id?: string
+    title?: string
+    provider?: string
+    error?: string
+  }>('/internal/toss/report', {
+    method: 'POST',
+    body: JSON.stringify({ userId, kind: 'stock_brief', symbol }),
+    signal: AbortSignal.timeout(180_000)
   })
-  const id = await saveReport(userId, result)
-  return { id, result }
+
+  if (!proxied.ok) {
+    throw new Error(proxied.error)
+  }
+  if (!proxied.data.ok || !proxied.data.id) {
+    throw new Error(proxied.data.error || '종목 보고서 생성 실패')
+  }
+
+  return {
+    id: proxied.data.id,
+    title: proxied.data.title,
+    provider: proxied.data.provider
+  }
 }
 
 export async function refreshNewsForUser(
   userId: string,
   opts?: { market?: 'KR' | 'US' | 'ALL'; symbols?: string[] }
 ): Promise<{ items: NewsFeedItem[]; errors: string[]; saved: number }> {
-  // 관심 종목 보강
+  // RSS 등 — 토스 Open API 아님
   let symbols = opts?.symbols ?? []
   const admin = createAdminClient()
   if (!symbols.length) {

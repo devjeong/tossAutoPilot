@@ -63,26 +63,23 @@ export async function POST(request: Request) {
           { status: 400 }
         )
       }
-      const { id, result } = await generateStockReportForUser(user.id, symbol)
+      const out = await generateStockReportForUser(user.id, symbol)
       return NextResponse.json({
         ok: true,
-        id,
-        title: result.title,
-        provider: result.provider,
-        model: result.model,
-        kadaraCount: result.kadaraCount,
-        symbol: result.symbol
+        id: out.id,
+        title: out.title,
+        provider: out.provider,
+        via: 'engine'
       })
     }
 
-    const { id, result } = await generateMarketReportForUser(user.id, kind)
+    const out = await generateMarketReportForUser(user.id, kind)
     return NextResponse.json({
       ok: true,
-      id,
-      title: result.title,
-      provider: result.provider,
-      model: result.model,
-      kadaraCount: result.kadaraCount
+      id: out.id,
+      title: out.title,
+      provider: out.provider,
+      via: 'engine'
     })
   } catch (e) {
     try {

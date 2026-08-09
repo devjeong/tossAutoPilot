@@ -5,6 +5,7 @@ import { getEngineConfig, loadEngineEnv } from './config.js'
 import { createEngineSupabase } from './supabase.js'
 import { EngineLoop } from './loop.js'
 import { handleMarketCandles, handleMarketSearch } from './market-api.js'
+import { handleConnectionTest, handleReportGenerate } from './toss-gateway.js'
 
 loadEngineEnv()
 const cfg = getEngineConfig()
@@ -165,6 +166,77 @@ const server = createServer((req, res) => {
       return
     }
 
+    // ── Toss gateway (연결 테스트 · 보고서) ─────────────────────
+    if (req.method === 'POST' && url.pathname === '/internal/toss/connection-test') {
+      if (!checkInternalAuth(req)) {
+        json(res, 401, { ok: false, error: 'unauthorized' })
+        return
+      }
+      if (!supabase) {
+        json(res, 503, { ok: false, error: 'engine supabase not configured' })
+        return
+      }
+      let body: {
+        userId?: string
+        clientId?: string
+        clientSecret?: string
+        bindAccount?: boolean
+      }
+      try {
+        body = JSON.parse(await readBody(req)) as typeof body
+      } catch {
+        json(res, 400, { ok: false, error: 'invalid json' })
+        return
+      }
+      if (!body.userId) {
+        json(res, 400, { ok: false, error: 'userId required' })
+        return
+      }
+      const result = await handleConnectionTest({
+        supabase,
+        config: cfg,
+        masterKey: cfg.credentialsMasterKey,
+        userId: body.userId,
+        clientId: body.clientId,
+        clientSecret: body.clientSecret,
+        bindAccount: body.bindAccount
+      })
+      json(res, result.status, result.body)
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/internal/toss/report') {
+      if (!checkInternalAuth(req)) {
+        json(res, 401, { ok: false, error: 'unauthorized' })
+        return
+      }
+      if (!supabase) {
+        json(res, 503, { ok: false, error: 'engine supabase not configured' })
+        return
+      }
+      let body: { userId?: string; kind?: string; symbol?: string }
+      try {
+        body = JSON.parse(await readBody(req)) as typeof body
+      } catch {
+        json(res, 400, { ok: false, error: 'invalid json' })
+        return
+      }
+      if (!body.userId || !body.kind) {
+        json(res, 400, { ok: false, error: 'userId and kind required' })
+        return
+      }
+      const result = await handleReportGenerate({
+        supabase,
+        config: cfg,
+        masterKey: cfg.credentialsMasterKey,
+        userId: body.userId,
+        kind: body.kind,
+        symbol: body.symbol
+      })
+      json(res, result.status, result.body)
+      return
+    }
+
     json(res, 404, { ok: false, error: 'not found' })
   })().catch((e) => {
     console.error(JSON.stringify({ msg: 'request error', error: String(e) }))
@@ -193,7 +265,12 @@ server.listen(cfg.port, cfg.host, () => {
         hasInternalSecret: Boolean(cfg.internalSecret),
         userId: cfg.userId,
         modeDefault: DEFAULT_ENGINE_MODE,
-        marketProxy: ['/internal/market/candles', '/internal/market/search'],
+        tossGateway: [
+          '/internal/market/candles',
+          '/internal/market/search',
+          '/internal/toss/connection-test',
+          '/internal/toss/report'
+        ],
         homePc:
           '1) 공인 IP → 토스 허용목록  2) Vercel ENGINE_URL → 이 PC 공개 URL  3) ENGINE_INTERNAL_SECRET 동일'
       })
