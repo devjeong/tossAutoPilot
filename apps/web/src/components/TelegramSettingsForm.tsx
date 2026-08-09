@@ -99,11 +99,9 @@ export function TelegramSettingsForm() {
         암호화 저장됩니다.
       </p>
 
-      <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
-          텔레그램 알림 사용
-        </span>
+      <label className="check">
+        <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+        <span className="check-label">텔레그램 알림 사용</span>
       </label>
 
       <label className="field">
@@ -122,45 +120,37 @@ export function TelegramSettingsForm() {
         />
       </label>
 
-      <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={notifyOnReserve}
-            onChange={(e) => setNotifyOnReserve(e.target.checked)}
-          />
-          예약 등록·재예약
-        </span>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={notifyOnReserve}
+          onChange={(e) => setNotifyOnReserve(e.target.checked)}
+        />
+        <span className="check-label">예약 등록·재예약</span>
       </label>
-      <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={notifyOnSubmit}
-            onChange={(e) => setNotifyOnSubmit(e.target.checked)}
-          />
-          주문 접수
-        </span>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={notifyOnSubmit}
+          onChange={(e) => setNotifyOnSubmit(e.target.checked)}
+        />
+        <span className="check-label">주문 접수</span>
       </label>
-      <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={notifyOnFill}
-            onChange={(e) => setNotifyOnFill(e.target.checked)}
-          />
-          체결
-        </span>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={notifyOnFill}
+          onChange={(e) => setNotifyOnFill(e.target.checked)}
+        />
+        <span className="check-label">체결</span>
       </label>
-      <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <input
-            type="checkbox"
-            checked={notifyOnCancel}
-            onChange={(e) => setNotifyOnCancel(e.target.checked)}
-          />
-          취소·종료
-        </span>
+      <label className="check">
+        <input
+          type="checkbox"
+          checked={notifyOnCancel}
+          onChange={(e) => setNotifyOnCancel(e.target.checked)}
+        />
+        <span className="check-label">취소·종료</span>
       </label>
 
       <div className="btn-row">

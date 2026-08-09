@@ -317,40 +317,34 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
                 </label>
               )}
 
-              <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={highValue}
-                    onChange={(e) => setHighValue(e.target.checked)}
-                  />
-                  고액 주문 확인 (한도 이상 시 필요)
-                </span>
+              <label className="check">
+                <input
+                  type="checkbox"
+                  checked={highValue}
+                  onChange={(e) => setHighValue(e.target.checked)}
+                />
+                <span className="check-label">고액 주문 확인 (한도 이상 시 필요)</span>
               </label>
 
               {tab === 'manual' && mode === 'live' && (
-                <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={confirmLive}
-                      onChange={(e) => setConfirmLive(e.target.checked)}
-                    />
-                    실거래 전송을 확인합니다
-                  </span>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={confirmLive}
+                    onChange={(e) => setConfirmLive(e.target.checked)}
+                  />
+                  <span className="check-label">실거래 전송을 확인합니다</span>
                 </label>
               )}
 
               {tab === 'reserve' && (
-                <label className="field" style={{ textTransform: 'none', letterSpacing: 'normal' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <input
-                      type="checkbox"
-                      checked={autoRequeue}
-                      onChange={(e) => setAutoRequeue(e.target.checked)}
-                    />
-                    미체결·취소 시 다음 영업일 자동 재예약
-                  </span>
+                <label className="check">
+                  <input
+                    type="checkbox"
+                    checked={autoRequeue}
+                    onChange={(e) => setAutoRequeue(e.target.checked)}
+                  />
+                  <span className="check-label">미체결·취소 시 다음 영업일 자동 재예약</span>
                 </label>
               )}
 

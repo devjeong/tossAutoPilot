@@ -713,7 +713,7 @@ table.data .num {
   color: var(--muted);
 }
 
-.field input,
+.field input:not([type='checkbox']):not([type='radio']),
 .watch-input,
 .field select,
 .field textarea {
@@ -729,6 +729,53 @@ table.data .num {
   border-radius: 0;
   width: 100%;
   min-height: var(--touch-min);
+}
+
+/* 체크박스 + 라벨: 작은 박스, 라벨이 남는 폭 전부 사용 */
+.check,
+label.check {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 0;
+  padding: 6px 0;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+  line-height: 1.35;
+  cursor: pointer;
+  width: 100%;
+  min-width: 0;
+}
+
+.check input[type='checkbox'],
+.field input[type='checkbox'],
+input[type='checkbox'] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  min-height: 16px;
+  max-width: 16px;
+  max-height: 16px;
+  margin: 2px 0 0;
+  padding: 0;
+  border: 1px solid var(--rule);
+  background: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+  accent-color: var(--ink);
+}
+
+.check-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  word-break: keep-all;
+  overflow-wrap: anywhere;
 }
 
 .watch-form {
