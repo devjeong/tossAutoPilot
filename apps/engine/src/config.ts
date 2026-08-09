@@ -33,6 +33,8 @@ export function getEngineConfig() {
     /** 지정 시 해당 유저만 heartbeat/quotes (미지정 시 관련 전원) */
     userId: process.env.ENGINE_USER_ID?.trim() || null,
     tossBaseUrl: process.env.TOSS_BASE_URL || 'https://openapi.tossinvest.com',
+    /** Vercel 웹 → 엔진 내부 API 인증 (비어 있으면 로컬 개발 허용) */
+    internalSecret: process.env.ENGINE_INTERNAL_SECRET?.trim() || '',
     hasDb: Boolean(supabaseUrl && serviceRoleKey)
   }
 }

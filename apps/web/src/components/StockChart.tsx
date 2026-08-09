@@ -212,7 +212,11 @@ export function StockChart({ symbol, name, market }: Props) {
             차트 불러오는 중…
           </p>
         )}
-        {error && <p className="form-error">{error}</p>}
+        {error && (
+          <p className="form-error" style={{ whiteSpace: 'pre-wrap' }}>
+            {error}
+          </p>
+        )}
         {meta && !error && (
           <p className="sub" style={{ margin: '6px 0 0' }}>
             {meta}

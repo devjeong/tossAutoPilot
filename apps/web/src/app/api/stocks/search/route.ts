@@ -9,6 +9,7 @@ import {
 } from '@tosspilot/core'
 import { createClient } from '@/lib/supabase/server'
 import { loadDecryptedCredentials } from '@/lib/credentials-store'
+import { engineFetchJson, isIpBlockedError } from '@/lib/engine-proxy'
 
 export type StockSearchHit = {
   symbol: string
@@ -18,7 +19,7 @@ export type StockSearchHit = {
   currency?: string
 }
 
-/** GET /api/stocks/search?q=삼성 */
+/** GET /api/stocks/search?q=삼성 — 엔진 프록시 우선 */
 export async function GET(req: Request) {
   const supabase = await createClient()
   const {
@@ -31,82 +32,86 @@ export async function GET(req: Request) {
     return NextResponse.json({ ok: true, items: [] as StockSearchHit[] })
   }
 
+  // 1) 엔진
+  const proxied = await engineFetchJson<{
+    ok: boolean
+    items?: StockSearchHit[]
+    error?: string
+    via?: string
+  }>('/internal/market/search', {
+    method: 'POST',
+    body: JSON.stringify({ userId: user.id, q })
+  })
+
+  if (proxied.ok && proxied.data.ok) {
+    return NextResponse.json(proxied.data)
+  }
+
+  const proxyErr = proxied.ok ? undefined : proxied.error
+  const proxyUnreachable = !proxied.ok && Boolean(proxied.unreachable)
+
+  // 2) 마스터 단독 (한글/코드) — 토스 없이 동작
+  const masterHits: StockSearchHit[] = []
+  if (hasHangul(q) || isKrSymbolCode(q) || /^\d+$/.test(q)) {
+    for (const m of searchKrMaster(q, 15)) {
+      masterHits.push({
+        symbol: m.symbol,
+        name: m.name,
+        market: 'KR',
+        currency: 'KRW'
+      })
+    }
+  }
+
+  // 3) 직접 토스 (허용 IP 로컬 개발)
   const creds = await loadDecryptedCredentials(user.id)
   if (!creds) {
+    if (masterHits.length) {
+      return NextResponse.json({
+        ok: true,
+        items: masterHits,
+        via: 'master-only',
+        warning: proxyErr || 'API 키 없음 — 마스터 검색만 사용'
+      })
+    }
     return NextResponse.json(
-      { ok: false, error: 'API 키를 설정에서 등록하세요' },
+      { ok: false, error: proxyErr || 'API 키를 설정에서 등록하세요' },
       { status: 400 }
     )
   }
 
-  const toss = new TossClient({
-    baseUrl: process.env.TOSS_BASE_URL || 'https://openapi.tossinvest.com',
-    credentials: creds
-  })
-
-  const hits: StockSearchHit[] = []
-  const seen = new Set<string>()
-
-  const push = (h: StockSearchHit) => {
-    const key = h.symbol.toUpperCase()
-    if (seen.has(key)) return
-    seen.add(key)
-    hits.push(h)
-  }
-
   try {
-    // 1) 국내: 종목명 / 코드 마스터 검색
-    if (hasHangul(q) || isKrSymbolCode(q) || /^\d+$/.test(q)) {
-      const masterHits = searchKrMaster(q, 15)
-      if (masterHits.length) {
-        // 토스 메타 보강
-        try {
-          const infos = await toss.stocks(masterHits.map((m) => m.symbol))
-          const bySym = new Map(infos.map((i) => [i.symbol, i]))
-          for (const m of masterHits) {
-            const info = bySym.get(m.symbol)
-            push({
-              symbol: m.symbol,
-              name: info?.name || m.name,
-              market: detectMarketFromStockInfo({ ...info, symbol: m.symbol }),
-              exchange: info?.market,
-              currency: info?.currency ?? 'KRW'
-            })
-          }
-        } catch {
-          for (const m of masterHits) {
-            push({ symbol: m.symbol, name: m.name, market: 'KR', currency: 'KRW' })
-          }
-        }
-      }
+    const toss = new TossClient({
+      baseUrl: process.env.TOSS_BASE_URL || 'https://openapi.tossinvest.com',
+      credentials: creds
+    })
+    const hits: StockSearchHit[] = [...masterHits]
+    const seen = new Set(hits.map((h) => h.symbol))
 
-      // 6자리 정확 코드 — 마스터에 없어도 조회
-      if (isKrSymbolCode(q) && !seen.has(q)) {
-        try {
-          const infos = await toss.stocks([q])
-          const info = infos[0]
+    if (hits.length) {
+      try {
+        const infos = await toss.stocks(hits.map((h) => h.symbol))
+        const bySym = new Map(infos.map((i) => [i.symbol, i]))
+        for (const h of hits) {
+          const info = bySym.get(h.symbol)
           if (info) {
-            push({
-              symbol: info.symbol,
-              name: info.name || info.symbol,
-              market: detectMarketFromStockInfo(info),
-              exchange: info.market,
-              currency: info.currency
-            })
+            h.name = info.name || h.name
+            h.market = detectMarketFromStockInfo({ ...info, symbol: h.symbol })
+            h.exchange = info.market
+            h.currency = info.currency ?? h.currency
           }
-        } catch {
-          /* ignore */
         }
+      } catch {
+        /* keep master names */
       }
     }
 
-    // 2) 미국 티커 / 영문 심볼
     if (isUsTickerLike(q) || (!hasHangul(q) && !/^\d+$/.test(q))) {
       const ticker = q.toUpperCase()
-      try {
+      if (!seen.has(ticker)) {
         const infos = await toss.stocks([ticker])
         for (const info of infos) {
-          push({
+          hits.push({
             symbol: info.symbol,
             name: info.name || info.englishName || info.symbol,
             market: detectMarketFromStockInfo(info),
@@ -114,25 +119,35 @@ export async function GET(req: Request) {
             currency: info.currency
           })
         }
-      } catch {
-        // 실패해도 휴리스틱 후보
-        if (isUsTickerLike(ticker) && !seen.has(ticker)) {
-          push({
-            symbol: ticker,
-            name: ticker,
-            market: isKrSymbolCode(ticker) ? 'KR' : 'US'
-          })
-        }
       }
     }
 
-    // 3) 영문 부분 — 마스터 영문 없음, 인기 티커 힌트는 생략
-
-    return NextResponse.json({ ok: true, items: hits.slice(0, 20) })
+    return NextResponse.json({
+      ok: true,
+      items: hits.slice(0, 20),
+      via: 'web-direct',
+      engineNote: proxyUnreachable ? proxyErr : undefined
+    })
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (masterHits.length) {
+      return NextResponse.json({
+        ok: true,
+        items: masterHits,
+        via: 'master-only',
+        warning: isIpBlockedError(msg)
+          ? '토스 IP 제한 — 국내 마스터 검색만 표시. 차트는 엔진(허용 IP) 필요.'
+          : msg
+      })
+    }
     return NextResponse.json(
-      { ok: false, error: e instanceof Error ? e.message : String(e) },
-      { status: 500 }
+      {
+        ok: false,
+        error: isIpBlockedError(msg)
+          ? `${msg} — 엔진을 허용 IP 에서 실행하고 ENGINE_URL 을 연결하세요.`
+          : msg
+      },
+      { status: 502 }
     )
   }
 }
