@@ -116,6 +116,27 @@ cd C:\DEV\TossAutoPilot
 
 ## 3. Vercel 이 상시 PC 엔진에 붙기
 
+### ⚠️ 자주 하는 실수
+
+Vercel 환경변수에 아래처럼 넣으면 **차트가 절대 안 됩니다.**
+
+```env
+ENGINE_URL=http://127.0.0.1:8787   # ❌ Vercel 자기 자신
+```
+
+- 종목 검색(삼성전자)은 **로컬 마스터**라 성공할 수 있음  
+- 차트는 **엔진→토스**가 필요 → 엔진 연결 실패 후 Vercel 이 토스 직행 → `IP address not allowed`
+
+**올바른 예 (포트포워드 사용 시):**
+
+```env
+ENGINE_URL=http://123.456.789.10:8787   # ✅ 상시 PC 공인 IP
+ENGINE_INTERNAL_SECRET=PC와_동일값
+```
+
+진단: 로그인 후 `https://(배포도메인)/api/engine/status`  
+→ `loopbackUrl: true` 이면 ENGINE_URL 수정 필요.
+
 Vercel 서버는 `127.0.0.1` 에 닿을 수 없습니다. **공개 URL** 이 필요합니다.
 
 ### 추천 A — Cloudflare Tunnel (포트 안 열어도 됨, 무료)

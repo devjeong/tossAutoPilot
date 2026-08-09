@@ -9,6 +9,7 @@ import {
 import { createClient } from '@/lib/supabase/server'
 import { loadDecryptedCredentials } from '@/lib/credentials-store'
 import {
+  allowWebDirectToss,
   engineFetchJson,
   ipBlockedHelp,
   isIpBlockedError
@@ -33,7 +34,7 @@ type CandlePayload = {
   error?: string
 }
 
-/** GET /api/stocks/candles?symbol=005930&interval=15m — 엔진 프록시 우선 */
+/** GET /api/stocks/candles?symbol=005930&interval=15m — 엔진 프록시 필수(Vercel) */
 export async function GET(req: Request) {
   const supabase = await createClient()
   const {
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
     )
   }
 
-  // 1) 허용 IP 엔진 경유 (권장)
+  // 1) 허용 IP 엔진 경유
   const proxied = await engineFetchJson<CandlePayload>('/internal/market/candles', {
     method: 'POST',
     body: JSON.stringify({ userId: user.id, symbol, interval })
@@ -65,17 +66,24 @@ export async function GET(req: Request) {
     return NextResponse.json(proxied.data)
   }
 
-  // 2) 엔진 불가 시 직접 호출 (로컬 next 가 허용 IP 인 경우만 성공)
-  const creds = await loadDecryptedCredentials(user.id)
-  if (!creds) {
+  // 2) Vercel 등: 엔진 실패 시 토스 직접 호출하지 않음 (IP 차단 + 혼란 메시지 방지)
+  if (!allowWebDirectToss()) {
     return NextResponse.json(
       {
         ok: false,
-        error: proxied.unreachable
-          ? proxied.error
-          : 'API 키를 설정에서 등록하세요'
+        error: proxied.error,
+        hint: '종목 검색은 로컬 마스터로 될 수 있지만, 차트는 엔진→토스 호출이 필요합니다.'
       },
-      { status: proxied.unreachable ? 503 : 400 }
+      { status: proxied.status || 503 }
+    )
+  }
+
+  // 3) 로컬 Next 전용 fallback
+  const creds = await loadDecryptedCredentials(user.id)
+  if (!creds) {
+    return NextResponse.json(
+      { ok: false, error: proxied.error || 'API 키를 설정에서 등록하세요' },
+      { status: 400 }
     )
   }
 
@@ -108,16 +116,13 @@ export async function GET(req: Request) {
         volume: c.volume,
         currency: c.currency
       })),
-      engineNote: proxied.unreachable
-        ? '엔진 미연결 — 직접 호출 성공. 프로덕션에서는 엔진 연결을 권장합니다.'
-        : undefined
+      engineNote: '엔진 미연결 — 로컬 직접 호출'
     })
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e)
-    const enginePart = proxied.unreachable ? ` [엔진: ${proxied.error}]` : ''
     const full = isIpBlockedError(msg)
-      ? ipBlockedHelp(msg) + enginePart
-      : msg + enginePart
+      ? ipBlockedHelp(msg) + `\n\n[엔진]\n${proxied.error}`
+      : `${msg}\n\n[엔진]\n${proxied.error}`
     return NextResponse.json({ ok: false, error: full }, { status: 502 })
   }
 }
