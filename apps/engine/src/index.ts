@@ -8,6 +8,19 @@ import { handleMarketCandles, handleMarketSearch } from './market-api.js'
 
 loadEngineEnv()
 const cfg = getEngineConfig()
+
+if (cfg.requireSecret && !cfg.internalSecret) {
+  console.error(
+    JSON.stringify({
+      msg: 'ENGINE_INTERNAL_SECRET required',
+      detail:
+        '상시 PC(ENGINE_HOST=0.0.0.0) 에서는 시크릿이 필수입니다. .env 에 ENGINE_INTERNAL_SECRET 을 넣고 Vercel 에도 동일 값을 설정하세요.',
+      hint: 'node -e "console.log(require(\'crypto\').randomBytes(24).toString(\'hex\'))"'
+    })
+  )
+  process.exit(1)
+}
+
 const supabase = createEngineSupabase(cfg)
 
 const loop = new EngineLoop({
@@ -35,8 +48,8 @@ function json(res: ServerResponse, status: number, body: unknown): void {
 }
 
 function checkInternalAuth(req: IncomingMessage): boolean {
-  // 시크릿 미설정: 로컬 개발 편의 (프로덕션에서는 반드시 설정)
-  if (!cfg.internalSecret) return true
+  // 시크릿 미설정 + requireSecret=false: 로컬 전용 개발
+  if (!cfg.internalSecret) return !cfg.requireSecret
   const h = req.headers['x-engine-secret']
   const auth = req.headers.authorization
   if (h === cfg.internalSecret) return true
@@ -52,6 +65,9 @@ const server = createServer((req, res) => {
       json(res, 200, {
         ok: true,
         service: 'tosspilot-engine',
+        deployMode: cfg.deployMode,
+        host: cfg.host,
+        port: cfg.port,
         modeDefault: DEFAULT_ENGINE_MODE,
         killSwitch: killSwitchGate(DEFAULT_RISK_CONFIG),
         dbEnabled: cfg.hasDb,
@@ -59,7 +75,8 @@ const server = createServer((req, res) => {
         hasInternalSecret: Boolean(cfg.internalSecret),
         userId: cfg.userId,
         status: loop.status(),
-        sampleClientOrderId: makeClientOrderId('health')
+        sampleClientOrderId: makeClientOrderId('health'),
+        tossNote: '토스 API 호출은 이 머신의 공인 IP 로 나갑니다. 토스 콘솔에 그 IP 를 등록하세요.'
       })
       return
     }
@@ -159,12 +176,15 @@ const server = createServer((req, res) => {
   })
 })
 
-server.listen(cfg.port, () => {
+server.listen(cfg.port, cfg.host, () => {
   console.log(
     JSON.stringify(
       redact({
         msg: 'TossAutoPilot engine listening',
+        deployMode: cfg.deployMode,
+        host: cfg.host,
         port: cfg.port,
+        health: `http://127.0.0.1:${cfg.port}/health`,
         tickMs: cfg.tickMs,
         heartbeatMs: cfg.heartbeatMs,
         quotesIntervalMs: cfg.quotesIntervalMs,
@@ -173,7 +193,9 @@ server.listen(cfg.port, () => {
         hasInternalSecret: Boolean(cfg.internalSecret),
         userId: cfg.userId,
         modeDefault: DEFAULT_ENGINE_MODE,
-        marketProxy: ['/internal/market/candles', '/internal/market/search']
+        marketProxy: ['/internal/market/candles', '/internal/market/search'],
+        homePc:
+          '1) 공인 IP → 토스 허용목록  2) Vercel ENGINE_URL → 이 PC 공개 URL  3) ENGINE_INTERNAL_SECRET 동일'
       })
     )
   )
@@ -189,6 +211,13 @@ server.listen(cfg.port, () => {
     console.warn(
       JSON.stringify({
         msg: 'warning: CREDENTIALS_MASTER_KEY missing — quotes/market proxy limited'
+      })
+    )
+  }
+  if (cfg.host === '0.0.0.0' && !cfg.internalSecret) {
+    console.warn(
+      JSON.stringify({
+        msg: 'warning: listening on all interfaces without ENGINE_INTERNAL_SECRET'
       })
     )
   }

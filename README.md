@@ -9,17 +9,30 @@
 
 ```
 Browser  →  Vercel (Next.js)  →  Supabase (Auth / Postgres / Realtime)
-                                  ↑
-Engine Worker (Fly.io)  ──────────┘  →  Toss Open API
+                │
+                │  ENGINE_URL
+                ▼
+         상시 PC 엔진 (:8787)  ──►  Toss Open API
+         (공인 IP = 토스 허용 목록)
 ```
 
 | 경로 | 역할 |
 |---|---|
 | `apps/web` | 관제 UI · 제어 API (Vercel) |
-| `apps/engine` | 상주 매매 엔진 (Fly.io 등) |
-| `packages/core` | decimal · 게이트 조각 · 멱등키 (기존 데스크톱 core 포팅) |
+| `apps/engine` | 상주 매매 엔진 — **꺼지지 않는 PC** 권장 (토스 IP) |
+| `packages/core` | decimal · 게이트 · 주문 · 차트 집계 |
 | `packages/shared` | Zod 타입 · RiskConfig · EngineMode |
 | `packages/db` | Drizzle 스키마 · Postgres 클라이언트 |
+
+### 상시 PC 엔진 (권장 배포)
+
+비용 없이 토스 IP 제한을 맞추려면 **고정으로 켜 둔 PC 1대**에서 엔진을 돌립니다.
+
+1. 상세: [`docs/DEPLOY_HOME_ENGINE.md`](docs/DEPLOY_HOME_ENGINE.md)
+2. 공인 IP 확인: `pnpm engine:ip` → 토스 콘솔에 등록
+3. 엔진 실행: `pnpm engine:home` 또는 `.\scripts\home-engine\start-engine.ps1`
+4. 부팅 자동 시작: `pnpm engine:autostart` (관리자 PowerShell)
+5. Vercel: `ENGINE_URL` = 터널/공개 엔진 URL, `ENGINE_INTERNAL_SECRET` = PC 와 동일
 
 ## 요구 사항
 
@@ -42,11 +55,18 @@ pnpm dev:web
 # http://localhost:3000
 ```
 
-### 엔진 Worker
+### 엔진 Worker (상시 PC)
 
 ```bash
+# 개발
 pnpm dev:engine
+
+# 상시 PC 프로덕션 기동
+pnpm engine:home
 # GET http://127.0.0.1:8787/health
+
+# 공인 IP (토스 등록용)
+pnpm engine:ip
 ```
 
 ## 환경 변수
