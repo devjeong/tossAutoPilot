@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { StockSearch, type StockPick } from './StockSearch'
+import { StockChart } from './StockChart'
 
 type CommandItem = {
   id: string
@@ -43,8 +45,7 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
   const [kill, setKill] = useState(initialKill)
   const [tab, setTab] = useState<'manual' | 'reserve'>('manual')
 
-  const [symbol, setSymbol] = useState('')
-  const [market, setMarket] = useState<'KR' | 'US'>('KR')
+  const [pick, setPick] = useState<StockPick | null>(null)
   const [side, setSide] = useState<'BUY' | 'SELL'>('BUY')
   const [orderType, setOrderType] = useState<'LIMIT' | 'MARKET'>('LIMIT')
   const [quantity, setQuantity] = useState('')
@@ -52,6 +53,9 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
   const [highValue, setHighValue] = useState(false)
   const [confirmLive, setConfirmLive] = useState(false)
   const [autoRequeue, setAutoRequeue] = useState(true)
+
+  const market = pick?.market ?? 'KR'
+  const symbol = pick?.symbol ?? ''
 
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -118,11 +122,15 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
     e.preventDefault()
     setError(null)
     setInfo(null)
+    if (!pick?.symbol) {
+      setError('종목을 검색해 선택하세요')
+      return
+    }
     setPending(true)
     try {
       const intent = {
-        symbol: symbol.trim().toUpperCase(),
-        market,
+        symbol: pick.symbol.trim().toUpperCase(),
+        market: pick.market,
         side,
         orderType,
         timeInForce: 'DAY' as const,
@@ -200,9 +208,15 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
   return (
     <div className="wide-grid">
       <div className="alert">
-        트레이딩 — 수동 매매 · 예약(DAY, 미체결 시 다음 영업일 재예약) · 게이트 10 통과 후 전송.
-        전략 자동매매는 이후 단계에서 연결합니다.
+        트레이딩 — 종목명 검색(국내) · 시장 자동 판별 · 차트(1분~월봉) · 수동/예약 매매.
+        토스 캔들은 1m·1d 원천이며 그 외 봉은 서버 집계입니다.
       </div>
+
+      <StockChart
+        symbol={pick?.symbol ?? null}
+        name={pick?.name}
+        market={pick?.market}
+      />
 
       <div className="wide-grid-2">
         <section className="block">
@@ -249,24 +263,7 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
             </div>
 
             <form className="auth-form" style={{ padding: 0 }} onSubmit={(e) => void onSubmit(e)}>
-              <label className="field">
-                심볼
-                <input
-                  value={symbol}
-                  onChange={(e) => setSymbol(e.target.value)}
-                  placeholder="005930 또는 AAPL"
-                  required
-                />
-              </label>
-
-              <div className="seg">
-                <b className={market === 'KR' ? 'on' : ''} role="button" tabIndex={0} onClick={() => setMarket('KR')}>
-                  국내
-                </b>
-                <b className={market === 'US' ? 'on' : ''} role="button" tabIndex={0} onClick={() => setMarket('US')}>
-                  미국
-                </b>
-              </div>
+              <StockSearch value={pick} onChange={setPick} disabled={pending} />
 
               <div className="seg">
                 <b className={side === 'BUY' ? 'on' : ''} role="button" tabIndex={0} onClick={() => setSide('BUY')}>
@@ -357,7 +354,7 @@ export function TradePanel({ engineMode: initialMode, killSwitch: initialKill }:
                 </label>
               )}
 
-              <button type="submit" className="btn" disabled={pending || kill}>
+              <button type="submit" className="btn" disabled={pending || kill || !pick}>
                 {pending ? '처리 중…' : tab === 'manual' ? '주문 전송' : '예약 등록'}
               </button>
             </form>

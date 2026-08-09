@@ -163,8 +163,11 @@ const StockInfo = z
   .object({
     symbol: z.string(),
     name: z.string().optional(),
+    englishName: z.string().optional(),
+    market: z.string().optional(),
     marketCountry: z.string().optional(),
-    currency: z.string().optional()
+    currency: z.string().optional(),
+    status: z.string().optional()
   })
   .passthrough()
 export type StockInfo = z.infer<typeof StockInfo>
@@ -179,6 +182,7 @@ const Candle = z.object({
   volume: decimal,
   currency: z.string().optional()
 })
+export type Candle = z.infer<typeof Candle>
 const CandlePage = z.object({
   candles: z.array(Candle),
   nextBefore: z.string().nullable().optional()
@@ -466,17 +470,21 @@ export class TossClient {
     return []
   }
 
-  /** GET /api/v1/candles */
+  /** GET /api/v1/candles — interval 은 1m | 1d 만 (스펙) */
   async candles(params: {
     symbol: string
     interval: '1m' | '1d'
     count?: number
+    before?: string
+    adjusted?: boolean
   }): Promise<CandlePage> {
     const query: Record<string, string> = {
       symbol: params.symbol,
       interval: params.interval
     }
     if (params.count !== undefined) query.count = String(params.count)
+    if (params.before) query.before = params.before
+    if (params.adjusted !== undefined) query.adjusted = String(params.adjusted)
     const payload = await this.authedGet({
       path: '/api/v1/candles',
       query,
@@ -484,6 +492,41 @@ export class TossClient {
       account: false
     })
     return CandlePage.parse(payload)
+  }
+
+  /**
+   * 캔들 여러 페이지 수집 (최신 → 과거). 반환은 시간 오름차순.
+   * 토스 1회 최대 200봉.
+   */
+  async candlesMulti(params: {
+    symbol: string
+    interval: '1m' | '1d'
+    pages?: number
+    countPerPage?: number
+  }): Promise<Candle[]> {
+    const pages = Math.max(1, Math.min(params.pages ?? 1, 20))
+    const count = Math.min(params.countPerPage ?? 200, 200)
+    const all: Candle[] = []
+    let before: string | undefined
+    for (let i = 0; i < pages; i++) {
+      const page = await this.candles({
+        symbol: params.symbol,
+        interval: params.interval,
+        count,
+        before,
+        adjusted: true
+      })
+      if (!page.candles.length) break
+      all.push(...page.candles)
+      if (!page.nextBefore) break
+      before = page.nextBefore
+    }
+    // 최신 페이지가 먼저 오므로 중복 제거 후 오름차순
+    const byTs = new Map<string, Candle>()
+    for (const c of all) byTs.set(c.timestamp, c)
+    return [...byTs.values()].sort(
+      (a, b) => Date.parse(a.timestamp) - Date.parse(b.timestamp)
+    )
   }
 
   // ── Orders ────────────────────────────────────────────────────────────

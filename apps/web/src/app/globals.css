@@ -1240,3 +1240,127 @@ mark.kadara {
     transition: none;
   }
 }
+
+/* ── Stock search & chart ─────────────────────────── */
+.stock-search {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.stock-pick-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stock-search-list {
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  right: 0;
+  top: calc(100% + 2px);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: var(--border);
+  background: var(--surface);
+  max-height: 240px;
+  overflow-y: auto;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+
+.stock-search-list li {
+  border-bottom: 1px solid var(--line);
+}
+
+.stock-search-list li:last-child {
+  border-bottom: none;
+}
+
+.stock-search-list button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  background: transparent;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  min-height: var(--touch-min);
+}
+
+.stock-search-list button:hover,
+.stock-search-list button:focus-visible {
+  background: var(--panel-head);
+  outline: none;
+}
+
+.stock-search-list button strong {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.stock-search-list .mono {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.stock-chart .chart-canvas {
+  width: 100%;
+  min-height: 320px;
+  border-top: var(--border);
+}
+
+.chart-intervals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.chart-iv {
+  appearance: none;
+  border: var(--border);
+  background: #fff;
+  color: var(--ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.chart-iv.on {
+  background: var(--ink);
+  color: #fff;
+}
+
+.chart-iv:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .chart-iv {
+    flex: 1 1 auto;
+    min-width: calc(33% - 4px);
+    padding: 8px 6px;
+    font-size: 10px;
+  }
+
+  .stock-chart .chart-canvas {
+    min-height: 260px;
+  }
+}
