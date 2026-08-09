@@ -51,11 +51,11 @@ export default async function NewsPage() {
           <div className="wide-grid">
             <NewsFeedPanel initialItems={(items ?? []) as NewsRow[]} />
           </div>
-          <div style={{ marginTop: 12 }}>
-            <Link href="/reports" className="btn ghost" style={{ width: 'auto', display: 'inline-block' }}>
+          <div className="page-actions">
+            <Link href="/reports" className="btn ghost">
               보고서
-            </Link>{' '}
-            <Link href="/" className="btn ghost" style={{ width: 'auto', display: 'inline-block' }}>
+            </Link>
+            <Link href="/" className="btn ghost">
               홈
             </Link>
           </div>

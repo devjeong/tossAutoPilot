@@ -119,13 +119,11 @@ export function WatchlistQuotesCard({ initialItems, initialSnapshot }: Props) {
               onChange={(e) => setSymbol(e.target.value)}
               placeholder="005930 또는 AAPL"
               disabled={pending}
+              inputMode="text"
+              autoCapitalize="characters"
+              autoCorrect="off"
             />
-            <button
-              type="submit"
-              className="btn"
-              style={{ width: 'auto', marginTop: 0 }}
-              disabled={pending || !symbol.trim()}
-            >
+            <button type="submit" className="btn" disabled={pending || !symbol.trim()}>
               추가
             </button>
           </form>
@@ -141,36 +139,38 @@ export function WatchlistQuotesCard({ initialItems, initialSnapshot }: Props) {
             </p>
           </div>
         ) : (
-          <table className="data">
-            <thead>
-              <tr>
-                <th>심볼</th>
-                <th className="num">현재가</th>
-                <th />
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item) => {
-                const q = priceBySymbol.get(item.symbol)
-                return (
-                  <tr key={item.id}>
-                    <td className="mono">{item.symbol}</td>
-                    <td className="num">{q?.lastPrice ?? '—'}</td>
-                    <td className="num">
-                      <button
-                        type="button"
-                        className="btn ghost"
-                        style={{ width: 'auto', padding: '4px 8px', margin: 0, fontSize: 10 }}
-                        onClick={() => void onRemove(item)}
-                      >
-                        삭제
-                      </button>
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+          <div className="table-scroll table-scroll-sm">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>심볼</th>
+                  <th className="num">현재가</th>
+                  <th />
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => {
+                  const q = priceBySymbol.get(item.symbol)
+                  return (
+                    <tr key={item.id}>
+                      <td className="mono">{item.symbol}</td>
+                      <td className="num">{q?.lastPrice ?? '—'}</td>
+                      <td className="num">
+                        <button
+                          type="button"
+                          className="btn ghost"
+                          style={{ width: 'auto', padding: '8px 12px', margin: 0, fontSize: 11 }}
+                          onClick={() => void onRemove(item)}
+                        >
+                          삭제
+                        </button>
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 

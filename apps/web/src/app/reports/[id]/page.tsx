@@ -126,11 +126,11 @@ export default async function ReportDetailPage({ params }: Props) {
             </section>
           </div>
 
-          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-            <Link href="/reports" className="btn ghost" style={{ width: 'auto' }}>
+          <div className="page-actions">
+            <Link href="/reports" className="btn ghost">
               ← 목록
             </Link>
-            <Link href="/news" className="btn ghost" style={{ width: 'auto' }}>
+            <Link href="/news" className="btn ghost">
               뉴스
             </Link>
           </div>

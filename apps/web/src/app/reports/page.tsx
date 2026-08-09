@@ -70,6 +70,7 @@ export default async function ReportsPage() {
                   </p>
                 </div>
               ) : (
+                <div className="table-scroll">
                 <table className="data">
                   <thead>
                     <tr>
@@ -109,15 +110,16 @@ export default async function ReportsPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </section>
           </div>
 
-          <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-            <Link href="/news" className="btn ghost" style={{ width: 'auto' }}>
+          <div className="page-actions">
+            <Link href="/news" className="btn ghost">
               뉴스·카더라
             </Link>
-            <Link href="/" className="btn ghost" style={{ width: 'auto' }}>
+            <Link href="/" className="btn ghost">
               홈
             </Link>
           </div>

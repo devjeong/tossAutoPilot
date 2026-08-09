@@ -163,32 +163,34 @@ export function PortfolioHero({ initial, initialError, initialPolledAt }: Props)
             <span>보유 종목</span>
             <span>{snap.items.length}종목</span>
           </div>
-          <table className="data">
-            <thead>
-              <tr>
-                <th>종목</th>
-                <th className="num">수량</th>
-                <th className="num">평가</th>
-                <th className="num">손익</th>
-                <th className="num">비중</th>
-              </tr>
-            </thead>
-            <tbody>
-              {snap.items.map((it) => (
-                <tr key={it.symbol}>
-                  <td className="mono">{it.symbol}</td>
-                  <td className="num">{it.quantity}</td>
-                  <td className="num">
-                    {ccy === 'KRW' ? it.marketValueKrw : `$${it.marketValueUsd}`}
-                  </td>
-                  <td className={`num ${signClass(it.profitLossPercent)}`}>
-                    {signed(it.profitLossPercent)}%
-                  </td>
-                  <td className="num">{it.weightPercent}%</td>
+          <div className="table-scroll">
+            <table className="data">
+              <thead>
+                <tr>
+                  <th>종목</th>
+                  <th className="num">수량</th>
+                  <th className="num">평가</th>
+                  <th className="num">손익</th>
+                  <th className="num">비중</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {snap.items.map((it) => (
+                  <tr key={it.symbol}>
+                    <td className="mono">{it.symbol}</td>
+                    <td className="num">{it.quantity}</td>
+                    <td className="num">
+                      {ccy === 'KRW' ? it.marketValueKrw : `$${it.marketValueUsd}`}
+                    </td>
+                    <td className={`num ${signClass(it.profitLossPercent)}`}>
+                      {signed(it.profitLossPercent)}%
+                    </td>
+                    <td className="num">{it.weightPercent}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </section>
       )}
     </>
