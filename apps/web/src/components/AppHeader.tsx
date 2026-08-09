@@ -4,11 +4,15 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { SignOutButton } from './SignOutButton'
+import { useAgeSeconds } from '@/lib/use-age-seconds'
 
 type Props = {
   email?: string | null
   engineState?: string | null
   engineMode?: string | null
+  /** ISO 시각 — 클라이언트에서 1초마다 경과 초 계산 */
+  heartbeatAt?: string | null
+  /** @deprecated heartbeatAt 우선. 없으면 고정값 표시 */
   heartbeatAgeSec?: number | null
   activePath?: 'home' | 'trade' | 'settings' | 'reports' | 'news'
 }
@@ -34,11 +38,14 @@ export function AppHeader({
   email,
   engineState,
   engineMode,
-  heartbeatAgeSec,
+  heartbeatAt,
+  heartbeatAgeSec: heartbeatAgeSecProp,
   activePath = 'home'
 }: Props) {
   const pathname = usePathname()
   const [menuOpen, setMenuOpen] = useState(false)
+  const ageFromAt = useAgeSeconds(heartbeatAt ?? null)
+  const heartbeatAgeSec = ageFromAt ?? heartbeatAgeSecProp ?? null
 
   const alive =
     heartbeatAgeSec !== null &&
@@ -97,7 +104,7 @@ export function AppHeader({
       <span className="badge warn">{modeLabel}</span>
       <span className="state-pill mono" title={stateLabel}>
         <span className={`dot ${alive ? 'ok' : engineState === 'running' ? 'warn' : 'idle'}`} />
-        하트비트 {heartbeatAgeSec != null ? `${heartbeatAgeSec}초` : '—'}
+        하트비트 {heartbeatAgeSec != null ? `${heartbeatAgeSec}초 전` : '—'}
       </span>
     </>
   )

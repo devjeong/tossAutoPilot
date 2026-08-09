@@ -1,7 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import type { PortfolioSnapshotDto } from '@tosspilot/core'
+import { useAgeSeconds } from '@/lib/use-age-seconds'
 
 type DisplayCurrency = 'KRW' | 'USD'
 
@@ -52,10 +53,7 @@ export function PortfolioHero({ initial, initialError, initialPolledAt }: Props)
   }, [refresh])
 
   const t = snap?.totals
-  const ageSec = useMemo(() => {
-    if (!polledAt) return null
-    return Math.max(0, Math.round((Date.now() - new Date(polledAt).getTime()) / 1000))
-  }, [polledAt])
+  const ageSec = useAgeSeconds(polledAt)
 
   const pick = (krw: string | undefined, usd: string | undefined) =>
     ccy === 'KRW' ? (krw ?? '—') : (usd ?? '—')

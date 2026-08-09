@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useAgeSeconds } from '@/lib/use-age-seconds'
 
 type WatchItem = {
   id: string
@@ -94,23 +95,14 @@ export function WatchlistQuotesCard({ initialItems, initialSnapshot }: Props) {
   }
 
   const priceBySymbol = new Map((snapshot?.quotes ?? []).map((q) => [q.symbol, q]))
-  const polledAgeSec =
-    snapshot?.polled_at != null
-      ? Math.max(0, Math.round((Date.now() - new Date(snapshot.polled_at).getTime()) / 1000))
-      : null
+  const polledAgeSec = useAgeSeconds(snapshot?.polled_at ?? null)
 
   return (
     <>
       <section className="block">
         <div className="block-h">
           <span>관심 시세</span>
-          <span>
-            {polledAgeSec == null
-              ? '—'
-              : snapshot?.poll_interval_ms != null
-                ? `${(snapshot.poll_interval_ms / 1000).toFixed(1)}초`
-                : `${polledAgeSec}초 전`}
-          </span>
+          <span>{polledAgeSec == null ? '—' : `${polledAgeSec}초 전`}</span>
         </div>
         <div className="block-b">
           <form className="watch-form" onSubmit={onAdd}>

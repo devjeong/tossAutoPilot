@@ -1,5 +1,8 @@
+'use client'
+
 import Link from 'next/link'
 import type { RiskConfig } from '@tosspilot/shared'
+import { useAgeSeconds } from '@/lib/use-age-seconds'
 
 type Props = {
   risk: RiskConfig
@@ -7,6 +10,7 @@ type Props = {
   engineMode?: string | null
   engineState?: string | null
   accountSeq?: number | null
+  heartbeatAt?: string | null
   heartbeatAgeSec?: number | null
   hasCredentials: boolean
   clientIdHint?: string | null
@@ -27,11 +31,13 @@ export function RiskBoard({
   engineMode,
   engineState,
   accountSeq,
-  heartbeatAgeSec,
+  heartbeatAt,
+  heartbeatAgeSec: heartbeatAgeSecProp,
   hasCredentials,
   clientIdHint,
   engineError
 }: Props) {
+  const heartbeatAgeSec = useAgeSeconds(heartbeatAt ?? null) ?? heartbeatAgeSecProp ?? null
   const killOff = killVerdict === 'PASS'
   const modeLabel = engineMode === 'live' ? '실거래' : '페이퍼'
   const stateLabel = STATE_KO[engineState ?? ''] ?? (engineState ?? '정지').toUpperCase()
@@ -86,7 +92,7 @@ export function RiskBoard({
           <div className="kv">
             <span>하트비트</span>
             <b className="mono">
-              {heartbeatAgeSec == null ? '—' : `${heartbeatAgeSec}초`}
+              {heartbeatAgeSec == null ? '—' : `${heartbeatAgeSec}초 전`}
             </b>
           </div>
           <div className="kv">

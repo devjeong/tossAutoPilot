@@ -20,13 +20,7 @@ export default async function ReportDetailPage({ params }: Props) {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  let heartbeatAgeSec: number | null = null
-  if (engine?.heartbeat_at) {
-    heartbeatAgeSec = Math.max(
-      0,
-      Math.round((Date.now() - new Date(engine.heartbeat_at).getTime()) / 1000)
-    )
-  }
+  const heartbeatAt = (engine?.heartbeat_at as string | null | undefined) ?? null
 
   const { data: report } = await supabase
     .from('market_reports')
@@ -50,7 +44,7 @@ export default async function ReportDetailPage({ params }: Props) {
         email={user.email}
         engineState={engine?.state ?? 'stopped'}
         engineMode={engine?.mode ?? 'paper'}
-        heartbeatAgeSec={heartbeatAgeSec}
+        heartbeatAt={heartbeatAt}
         activePath="reports"
       />
       <main className="content page-wide">

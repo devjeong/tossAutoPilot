@@ -17,13 +17,7 @@ export default async function NewsPage() {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  let heartbeatAgeSec: number | null = null
-  if (engine?.heartbeat_at) {
-    heartbeatAgeSec = Math.max(
-      0,
-      Math.round((Date.now() - new Date(engine.heartbeat_at).getTime()) / 1000)
-    )
-  }
+  const heartbeatAt = (engine?.heartbeat_at as string | null | undefined) ?? null
 
   const { data: items } = await supabase
     .from('news_items')
@@ -40,7 +34,7 @@ export default async function NewsPage() {
         email={user.email}
         engineState={engine?.state ?? 'stopped'}
         engineMode={engine?.mode ?? 'paper'}
-        heartbeatAgeSec={heartbeatAgeSec}
+        heartbeatAt={heartbeatAt}
         activePath="news"
       />
       <main className="content page-wide">

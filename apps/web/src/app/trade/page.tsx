@@ -30,13 +30,7 @@ export default async function TradePage() {
     .eq('id', user.id)
     .maybeSingle()
 
-  let heartbeatAgeSec: number | null = null
-  if (engine?.heartbeat_at) {
-    heartbeatAgeSec = Math.max(
-      0,
-      Math.round((Date.now() - new Date(engine.heartbeat_at).getTime()) / 1000)
-    )
-  }
+  const heartbeatAt = (engine?.heartbeat_at as string | null | undefined) ?? null
 
   const risk = {
     ...DEFAULT_RISK_CONFIG,
@@ -49,7 +43,7 @@ export default async function TradePage() {
         email={user.email}
         engineState={engine?.state ?? 'stopped'}
         engineMode={engine?.mode ?? 'paper'}
-        heartbeatAgeSec={heartbeatAgeSec}
+        heartbeatAt={heartbeatAt}
         activePath="trade"
       />
       <main className="content page-wide">

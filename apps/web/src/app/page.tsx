@@ -38,13 +38,7 @@ export default async function HomePage() {
   const risk = (profile?.risk_config as typeof DEFAULT_RISK_CONFIG | null) ?? DEFAULT_RISK_CONFIG
   const kill = killSwitchGate(risk)
 
-  let heartbeatAgeSec: number | null = null
-  if (engine?.heartbeat_at) {
-    heartbeatAgeSec = Math.max(
-      0,
-      Math.round((Date.now() - new Date(engine.heartbeat_at).getTime()) / 1000)
-    )
-  }
+  const heartbeatAt = (engine?.heartbeat_at as string | null | undefined) ?? null
 
   let hasCredentials = false
   let clientIdHint: string | null = null
@@ -87,7 +81,7 @@ export default async function HomePage() {
         email={user.email}
         engineState={engine?.state ?? 'stopped'}
         engineMode={engine?.mode ?? 'paper'}
-        heartbeatAgeSec={heartbeatAgeSec}
+        heartbeatAt={heartbeatAt}
         activePath="home"
       />
       <main className="content">
@@ -99,7 +93,7 @@ export default async function HomePage() {
               engineMode={engine?.mode}
               engineState={engine?.state}
               accountSeq={engine?.active_account_seq}
-              heartbeatAgeSec={heartbeatAgeSec}
+              heartbeatAt={heartbeatAt}
               hasCredentials={hasCredentials}
               clientIdHint={clientIdHint}
               engineError={engine?.last_error}
