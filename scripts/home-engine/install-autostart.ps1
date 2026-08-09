@@ -10,9 +10,11 @@ if (-not (Test-Path $StartScript)) {
   throw "start-engine.ps1 not found: $StartScript"
 }
 
-# pwsh 우선, 없으면 Windows PowerShell
-$PsExe = (Get-Command pwsh -ErrorAction SilentlyContinue)?.Source
-if (-not $PsExe) {
+# pwsh 우선, 없으면 Windows PowerShell 5.1
+$PwshCmd = Get-Command pwsh -ErrorAction SilentlyContinue
+if ($PwshCmd -and $PwshCmd.Source) {
+  $PsExe = $PwshCmd.Source
+} else {
   $PsExe = Join-Path $env:SystemRoot 'System32\WindowsPowerShell\v1.0\powershell.exe'
 }
 
