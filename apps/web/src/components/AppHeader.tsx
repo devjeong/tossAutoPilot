@@ -10,7 +10,7 @@ type Props = {
   engineState?: string | null
   engineMode?: string | null
   heartbeatAgeSec?: number | null
-  activePath?: 'home' | 'settings' | 'reports' | 'news'
+  activePath?: 'home' | 'trade' | 'settings' | 'reports' | 'news'
 }
 
 const STATE_KO: Record<string, string> = {
@@ -23,7 +23,7 @@ const STATE_KO: Record<string, string> = {
 
 const NAV: { href: string; label: string; path: Props['activePath'] | null; disabled?: boolean }[] = [
   { href: '/', label: '홈', path: 'home' },
-  { href: '#', label: '트레이딩', path: null, disabled: true },
+  { href: '/trade', label: '트레이딩', path: 'trade' },
   { href: '#', label: '전략', path: null, disabled: true },
   { href: '/reports', label: '보고서', path: 'reports' },
   { href: '/news', label: '뉴스', path: 'news' },

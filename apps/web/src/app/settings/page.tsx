@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getCredentialStatus } from '@/lib/credentials-store'
 import { AppHeader } from '@/components/AppHeader'
 import { CredentialsForm } from '@/components/CredentialsForm'
+import { TelegramSettingsForm } from '@/components/TelegramSettingsForm'
 
 export default async function SettingsPage() {
   const supabase = await createClient()
@@ -106,6 +107,16 @@ export default async function SettingsPage() {
               </div>
             </section>
           </div>
+
+          <section className="block" style={{ marginTop: 16 }}>
+            <div className="block-h">
+              <span>텔레그램 알림</span>
+              <span>주문 · 예약 · 체결</span>
+            </div>
+            <div className="block-b">
+              <TelegramSettingsForm />
+            </div>
+          </section>
         </div>
       </main>
     </div>

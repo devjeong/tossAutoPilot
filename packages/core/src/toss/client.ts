@@ -8,6 +8,7 @@ import type { TossCredentials } from '../crypto/credentials-payload.js'
 import { DEFAULT_TOSS_BASE_URL } from './connection-test.js'
 
 export const MAX_SYMBOLS_PER_PRICE_CALL = 200
+export const MAX_ORDER_PAGE_SIZE = 100
 
 const TokenResponse = z.object({
   access_token: z.string().min(1),
@@ -183,6 +184,75 @@ const CandlePage = z.object({
   nextBefore: z.string().nullable().optional()
 })
 export type CandlePage = z.infer<typeof CandlePage>
+
+const PriceLimits = z.object({
+  timestamp: z.string().optional(),
+  upperLimitPrice: decimal.nullable().optional(),
+  lowerLimitPrice: decimal.nullable().optional(),
+  currency: z.string().optional()
+})
+export type PriceLimits = z.infer<typeof PriceLimits>
+
+const SellableQuantity = z.object({
+  sellableQuantity: decimal
+})
+export type SellableQuantity = z.infer<typeof SellableQuantity>
+
+const OrderExecution = z.object({
+  filledQuantity: decimal,
+  averageFilledPrice: decimal.nullable().optional(),
+  filledAmount: decimal.nullable().optional(),
+  commission: decimal.nullable().optional(),
+  tax: decimal.nullable().optional(),
+  filledAt: z.string().nullable().optional(),
+  settlementDate: z.string().nullable().optional()
+})
+
+const TossOrder = z.object({
+  orderId: z.string(),
+  symbol: z.string(),
+  side: z.string(),
+  orderType: z.string(),
+  timeInForce: z.string().optional(),
+  status: z.string(),
+  price: decimal.nullable().optional(),
+  quantity: decimal,
+  orderAmount: decimal.nullable().optional(),
+  currency: z.string().optional(),
+  orderedAt: z.string().optional(),
+  canceledAt: z.string().nullable().optional(),
+  execution: OrderExecution.optional()
+})
+export type TossOrder = z.infer<typeof TossOrder>
+
+const OrderPage = z.object({
+  orders: z.array(TossOrder),
+  nextCursor: z.string().nullable().optional(),
+  hasNext: z.boolean().optional()
+})
+export type OrderPage = z.infer<typeof OrderPage>
+
+const OrderCreateResult = z.object({
+  orderId: z.string(),
+  clientOrderId: z.string().nullable().optional()
+})
+export type OrderCreateResult = z.infer<typeof OrderCreateResult>
+
+const OrderCancelResult = z.object({
+  orderId: z.string()
+})
+export type OrderCancelResult = z.infer<typeof OrderCancelResult>
+
+export type OrderCreateBody = {
+  clientOrderId: string
+  symbol: string
+  side: 'BUY' | 'SELL'
+  orderType: 'LIMIT' | 'MARKET'
+  timeInForce: 'DAY' | 'CLS'
+  quantity: string
+  price?: string
+  confirmHighValueOrder: boolean
+}
 
 export interface TossClientOptions {
   baseUrl?: string
@@ -416,9 +486,114 @@ export class TossClient {
     return CandlePage.parse(payload)
   }
 
+  // ── Orders ────────────────────────────────────────────────────────────
+
+  /** POST /api/v1/orders — clientOrderId 멱등키 필수 */
+  async createOrder(body: OrderCreateBody): Promise<OrderCreateResult> {
+    if (!body.clientOrderId?.trim()) {
+      throw new Error('clientOrderId(멱등키) 없이 주문을 보낼 수 없습니다')
+    }
+    const payload = await this.authedRequest({
+      method: 'POST',
+      path: '/api/v1/orders',
+      bucket: this.genericBucket,
+      account: true,
+      body
+    })
+    return OrderCreateResult.parse(payload)
+  }
+
+  /** POST /api/v1/orders/{id}/cancel — 새 orderId 발급됨 */
+  async cancelOrder(orderId: string): Promise<OrderCancelResult> {
+    const payload = await this.authedRequest({
+      method: 'POST',
+      path: `/api/v1/orders/${encodeURIComponent(orderId)}/cancel`,
+      bucket: this.genericBucket,
+      account: true,
+      body: {}
+    })
+    return OrderCancelResult.parse(payload)
+  }
+
+  /** GET /api/v1/orders */
+  async orders(query: {
+    status: 'OPEN' | 'CLOSED'
+    symbol?: string
+    from?: string
+    to?: string
+    cursor?: string
+    limit?: number
+  }): Promise<OrderPage> {
+    if (query.limit !== undefined && query.limit > MAX_ORDER_PAGE_SIZE) {
+      throw new Error(`orders() limit must be <= ${MAX_ORDER_PAGE_SIZE}`)
+    }
+    const q: Record<string, string> = { status: query.status }
+    if (query.symbol) q.symbol = query.symbol
+    if (query.from) q.from = query.from
+    if (query.to) q.to = query.to
+    if (query.cursor) q.cursor = query.cursor
+    if (query.limit !== undefined) q.limit = String(query.limit)
+    const payload = await this.authedGet({
+      path: '/api/v1/orders',
+      query: q,
+      bucket: this.genericBucket,
+      account: true
+    })
+    return OrderPage.parse(payload)
+  }
+
+  /** GET /api/v1/orders/{id} */
+  async order(orderId: string): Promise<TossOrder> {
+    const payload = await this.authedGet({
+      path: `/api/v1/orders/${encodeURIComponent(orderId)}`,
+      bucket: this.genericBucket,
+      account: true
+    })
+    return TossOrder.parse(payload)
+  }
+
+  /** GET /api/v1/price-limits */
+  async priceLimits(symbol: string): Promise<PriceLimits> {
+    const payload = await this.authedGet({
+      path: '/api/v1/price-limits',
+      query: { symbol },
+      bucket: this.marketBucket,
+      account: false
+    })
+    return PriceLimits.parse(payload)
+  }
+
+  /** GET /api/v1/sellable-quantity */
+  async sellableQuantity(symbol: string): Promise<SellableQuantity> {
+    const payload = await this.authedGet({
+      path: '/api/v1/sellable-quantity',
+      query: { symbol },
+      bucket: this.genericBucket,
+      account: true
+    })
+    return SellableQuantity.parse(payload)
+  }
+
   private async authedGet(opts: {
     path: string
     query?: Record<string, string>
+    bucket: TokenBucket
+    account: boolean
+  }): Promise<unknown> {
+    return this.authedRequest({
+      method: 'GET',
+      path: opts.path,
+      query: opts.query,
+      bucket: opts.bucket,
+      account: opts.account
+    })
+  }
+
+  private async authedRequest(opts: {
+    method: 'GET' | 'POST'
+    path: string
+    query?: Record<string, string>
+    body?: unknown
     bucket: TokenBucket
     account: boolean
   }): Promise<unknown> {
@@ -440,14 +615,20 @@ export class TossClient {
       headers['X-Tossinvest-Account'] = String(this.accountSeq)
     }
 
-    let res = await this.fetchWithTimeout(url.toString(), { method: 'GET', headers })
+    const init: RequestInit = { method: opts.method, headers }
+    if (opts.method === 'POST') {
+      headers['Content-Type'] = 'application/json'
+      init.body = JSON.stringify(opts.body ?? {})
+    }
+
+    let res = await this.fetchWithTimeout(url.toString(), init)
     this.observe(opts.bucket, res)
 
     if (res.status === 401) {
       this.invalidateToken()
       const token2 = await this.getToken()
       headers.Authorization = `Bearer ${token2}`
-      res = await this.fetchWithTimeout(url.toString(), { method: 'GET', headers })
+      res = await this.fetchWithTimeout(url.toString(), init)
       this.observe(opts.bucket, res)
     }
 
@@ -461,9 +642,10 @@ export class TossClient {
 
     if (!res.ok) {
       const body = await res.text().catch(() => '')
-      throw new Error(`${opts.path} HTTP ${res.status}: ${body.slice(0, 200)}`)
+      throw new Error(`${opts.path} HTTP ${res.status}: ${body.slice(0, 300)}`)
     }
 
+    if (res.status === 204) return null
     const json: unknown = await res.json()
     if (json && typeof json === 'object' && 'result' in json) {
       return (json as { result: unknown }).result

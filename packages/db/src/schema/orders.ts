@@ -1,11 +1,11 @@
 import { jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
-import type { OrderCommandStatus, OrderIntent } from '@tosspilot/shared'
+import type { OrderCommandSource, OrderCommandStatus, OrderIntent } from '@tosspilot/shared'
 import { profiles } from './profiles'
 import { strategies } from './strategies'
 
 /**
- * UI/API ??Worker 주문 명령 ??
- * Worker 가 claim ??게이????paper/live 분기.
+ * UI/API → Worker 주문 명령 큐.
+ * Worker 가 claim 후 게이트 평가 → paper/live 분기.
  */
 export const orderCommands = pgTable('order_commands', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -15,7 +15,9 @@ export const orderCommands = pgTable('order_commands', {
   strategyId: uuid('strategy_id').references(() => strategies.id, {
     onDelete: 'set null'
   }),
-  source: text('source').notNull().default('manual'),
+  /** reserved_orders.id 연결 (source=reserved 일 때) */
+  reservedOrderId: uuid('reserved_order_id'),
+  source: text('source').$type<OrderCommandSource | string>().notNull().default('manual'),
   status: text('status').$type<OrderCommandStatus>().notNull().default('pending'),
   intent: jsonb('intent').$type<OrderIntent>().notNull(),
   clientOrderId: text('client_order_id'),

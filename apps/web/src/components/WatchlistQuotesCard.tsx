@@ -191,9 +191,9 @@ export function WatchlistQuotesCard({ initialItems, initialSnapshot }: Props) {
             <span>3</span>
             <b>페이퍼 주문 테스트</b>
           </div>
-          <button type="button" className="btn" disabled title="준비 중">
+          <a href="/trade" className="btn">
             트레이딩 열기
-          </button>
+          </a>
         </div>
       </section>
     </>

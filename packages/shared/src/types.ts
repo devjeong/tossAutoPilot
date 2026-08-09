@@ -69,6 +69,46 @@ export const OrderCommandStatusSchema = z.enum([
   'submitted',
   'blocked',
   'failed',
-  'would_submit'
+  'would_submit',
+  'cancelled'
 ])
 export type OrderCommandStatus = z.infer<typeof OrderCommandStatusSchema>
+
+export const OrderCommandSourceSchema = z.enum([
+  'manual',
+  'reserved',
+  'strategy',
+  'cancel'
+])
+export type OrderCommandSource = z.infer<typeof OrderCommandSourceSchema>
+
+/** 예약 매매 상태 — 장 마감 미체결 시 armed 로 되돌려 다음 영업일 재예약 */
+export const ReservedOrderStatusSchema = z.enum([
+  'armed',
+  'working',
+  'filled',
+  'cancelled',
+  'paused',
+  'error'
+])
+export type ReservedOrderStatus = z.infer<typeof ReservedOrderStatusSchema>
+
+export const NotificationSettingsSchema = z.object({
+  telegramEnabled: z.boolean().default(false),
+  telegramChatId: z.string().optional(),
+  /** 설정 저장 시에만 전달. DB 에는 암호문만 보관 */
+  telegramBotToken: z.string().optional(),
+  notifyOnReserve: z.boolean().default(true),
+  notifyOnSubmit: z.boolean().default(true),
+  notifyOnFill: z.boolean().default(true),
+  notifyOnCancel: z.boolean().default(true)
+})
+export type NotificationSettings = z.infer<typeof NotificationSettingsSchema>
+
+export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
+  telegramEnabled: false,
+  notifyOnReserve: true,
+  notifyOnSubmit: true,
+  notifyOnFill: true,
+  notifyOnCancel: true
+}

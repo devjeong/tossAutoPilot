@@ -4,6 +4,9 @@ import type { EngineConfig } from './config.js'
 import { markStopped, pulseHeartbeat, type HeartbeatResult } from './heartbeat.js'
 import { QuotesPoller, type QuotesPollStatus } from './quotes-poller.js'
 import { PortfolioPoller, type PortfolioPollStatus } from './portfolio-poller.js'
+import { OrderProcessor, type OrderProcessorStatus } from './order-processor.js'
+import { ReservedPoller, type ReservedPollStatus } from './reserved-poller.js'
+import { FillWatcher, type FillWatcherStatus } from './fill-watcher.js'
 
 export interface EngineLoopOptions {
   tickMs: number
@@ -13,6 +16,9 @@ export interface EngineLoopOptions {
   masterKey: string
   quotesIntervalMs: number
   portfolioIntervalMs: number
+  ordersIntervalMs?: number
+  reservedIntervalMs?: number
+  fillIntervalMs?: number
 }
 
 export interface EngineLoopStatus {
@@ -26,6 +32,9 @@ export interface EngineLoopStatus {
   dbEnabled: boolean
   quotes: QuotesPollStatus | null
   portfolio: PortfolioPollStatus | null
+  orders: OrderProcessorStatus | null
+  reserved: ReservedPollStatus | null
+  fills: FillWatcherStatus | null
   note: string
 }
 
@@ -45,6 +54,9 @@ export class EngineLoop {
   private pulsing = false
   private quotes: QuotesPoller | null = null
   private portfolio: PortfolioPoller | null = null
+  private orders: OrderProcessor | null = null
+  private reserved: ReservedPoller | null = null
+  private fills: FillWatcher | null = null
 
   constructor(private readonly opts: EngineLoopOptions) {}
 
@@ -60,8 +72,11 @@ export class EngineLoop {
       dbEnabled: Boolean(this.opts.supabase),
       quotes: this.quotes?.getStatus() ?? null,
       portfolio: this.portfolio?.getStatus() ?? null,
+      orders: this.orders?.getStatus() ?? null,
+      reserved: this.reserved?.getStatus() ?? null,
+      fills: this.fills?.getStatus() ?? null,
       note: this.opts.supabase
-        ? 'heartbeat + quotes + portfolio → Supabase'
+        ? 'heartbeat + quotes + portfolio + orders + reserved + fills'
         : 'DB 미연결 — SUPABASE_URL + SERVICE_ROLE|SECRET 필요'
     }
   }
@@ -99,10 +114,34 @@ export class EngineLoop {
         baseIntervalMs: this.opts.portfolioIntervalMs
       })
       this.portfolio.start()
+
+      this.orders = new OrderProcessor({
+        supabase: this.opts.supabase,
+        config: this.opts.config,
+        masterKey: this.opts.masterKey,
+        baseIntervalMs: this.opts.ordersIntervalMs ?? 2000
+      })
+      this.orders.start()
+
+      this.reserved = new ReservedPoller({
+        supabase: this.opts.supabase,
+        config: this.opts.config,
+        masterKey: this.opts.masterKey,
+        baseIntervalMs: this.opts.reservedIntervalMs ?? 15_000
+      })
+      this.reserved.start()
+
+      this.fills = new FillWatcher({
+        supabase: this.opts.supabase,
+        config: this.opts.config,
+        masterKey: this.opts.masterKey,
+        baseIntervalMs: this.opts.fillIntervalMs ?? 12_000
+      })
+      this.fills.start()
     } else {
       console.warn(
         JSON.stringify({
-          msg: 'quotes/portfolio poller not started',
+          msg: 'pollers not started',
           hasDb: Boolean(this.opts.supabase),
           hasMasterKey: Boolean(this.opts.masterKey)
         })
@@ -119,6 +158,12 @@ export class EngineLoop {
     this.quotes = null
     this.portfolio?.stop()
     this.portfolio = null
+    this.orders?.stop()
+    this.orders = null
+    this.reserved?.stop()
+    this.reserved = null
+    this.fills?.stop()
+    this.fills = null
 
     if (this.opts.supabase) {
       try {

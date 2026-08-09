@@ -65,12 +65,12 @@ export function RiskBoard({
             <span>모드</span>
             <b>{modeLabel}</b>
           </div>
-          <Link href="/settings" className="btn">
+          <Link href="/trade" className="btn">
+            트레이딩 열기
+          </Link>
+          <Link href="/settings" className="btn ghost">
             실거래 준비…
           </Link>
-          <button type="button" className="btn ghost" disabled title="곧 연결됩니다">
-            전체 정지
-          </button>
         </div>
       </section>
 
