@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>05b · Ops Control Refined — TossAutoPilot</title>
+<style>
+  :root {
+    --bg: #12141a;
+    --panel: #181b22;
+    --panel-2: #1e222b;
+    --ink: #e6e8ee;
+    --muted: #8a90a0;
+    --faint: #5c6370;
+    --line: #2a2f3a;
+    --line-soft: #232833;
+    --accent: #3d9a6a;
+    --accent-dim: rgba(61, 154, 106, 0.12);
+    --warn: #c9922e;
+    --warn-dim: rgba(201, 146, 46, 0.12);
+    --danger: #c45c5c;
+    --danger-dim: rgba(196, 92, 92, 0.1);
+    --mono: "IBM Plex Mono", "Cascadia Mono", ui-monospace, monospace;
+    --sans: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1440px;
+    min-height: 900px;
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .tag {
+    position: fixed; top: 12px; right: 12px; z-index: 20;
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 6px 10px; background: #0c0e12; border: 1px solid var(--line);
+    color: var(--muted);
+  }
+  .top {
+    display: flex; align-items: center; gap: 20px;
+    height: 48px; padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    background: #0f1116;
+  }
+  .brand {
+    font-size: 13px; font-weight: 600; letter-spacing: 0.04em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .brand i {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-dim);
+  }
+  .brand em {
+    font-style: normal; font-weight: 400; color: var(--faint);
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  }
+  .modes {
+    display: flex; gap: 2px; margin-left: 12px;
+  }
+  .modes span {
+    font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--faint); padding: 6px 12px;
+  }
+  .modes .on {
+    color: var(--ink); border-bottom: 1px solid var(--ink);
+  }
+  .top-right {
+    margin-left: auto; display: flex; align-items: center; gap: 14px;
+    font-size: 11px; color: var(--muted); font-family: var(--mono);
+  }
+  .pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 8px; border: 1px solid var(--line);
+    background: var(--panel); color: var(--muted);
+  }
+  .pill.ok { border-color: rgba(61,154,106,0.35); color: var(--accent); background: var(--accent-dim); }
+  .pill.paper { border-color: rgba(201,146,46,0.35); color: var(--warn); background: var(--warn-dim); }
+  .dot {
+    width: 5px; height: 5px; border-radius: 50%; background: var(--accent);
+  }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 260px 1fr 280px;
+    height: calc(900px - 48px);
+  }
+  .col {
+    border-right: 1px solid var(--line);
+    padding: 14px 14px 18px;
+    overflow: hidden;
+  }
+  .col:last-child { border-right: none; }
+
+  .section-label {
+    font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--faint); margin-bottom: 8px; font-weight: 500;
+  }
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    margin-bottom: 12px;
+  }
+  .panel-h {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line-soft);
+    background: var(--panel-2);
+  }
+  .panel-h span {
+    font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 500;
+  }
+  .panel-b { padding: 12px; }
+
+  /* thin warn rail — not a chunky yellow block */
+  .warn-rail {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid rgba(201,146,46,0.35);
+    border-left: 2px solid var(--warn);
+    background: var(--warn-dim);
+    margin-bottom: 12px;
+    font-size: 11px; color: #d4b06a; line-height: 1.45;
+  }
+  .warn-rail strong { color: #e8c878; font-weight: 600; display: block; margin-bottom: 2px; letter-spacing: 0.04em; }
+
+  .kv {
+    display: flex; justify-content: space-between; align-items: baseline;
+    padding: 7px 0; border-bottom: 1px solid var(--line-soft);
+    font-size: 12px;
+  }
+  .kv:last-child { border-bottom: none; }
+  .kv .k { color: var(--muted); }
+  .kv .v { font-family: var(--mono); font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .kv .v.ok { color: var(--accent); }
+  .kv .v.danger { color: var(--danger); }
+
+  .actions { display: grid; gap: 8px; margin-top: 12px; }
+  .btn {
+    font: inherit; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 12px; border: 1px solid var(--line);
+    background: transparent; color: var(--muted); cursor: default; text-align: left;
+  }
+  .btn.primary {
+    background: var(--panel-2); color: var(--ink); border-color: #3a4150;
+  }
+  .btn.danger {
+    border-color: rgba(196,92,92,0.45); color: #e09090; background: var(--danger-dim);
+  }
+
+  /* equity */
+  .equity-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px;
+  }
+  .seg {
+    display: inline-flex; border: 1px solid var(--line); background: #0f1116;
+  }
+  .seg b {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 5px 12px; font-weight: 500; color: var(--faint);
+  }
+  .seg .on { color: var(--ink); background: var(--panel-2); }
+  .hero {
+    font-family: var(--mono); font-size: 40px; font-weight: 500;
+    letter-spacing: -0.03em; font-variant-numeric: tabular-nums;
+    line-height: 1.05;
+  }
+  .hero-sub {
+    margin-top: 8px; font-size: 12px; color: var(--accent);
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+  }
+  .metrics {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    margin-top: 16px; background: var(--line); border: 1px solid var(--line);
+  }
+  .metric {
+    background: var(--panel); padding: 12px;
+  }
+  .metric .k {
+    font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--faint);
+  }
+  .metric .v {
+    margin-top: 6px; font-family: var(--mono); font-size: 15px;
+    font-variant-numeric: tabular-nums;
+  }
+  .metric .s {
+    margin-top: 3px; font-size: 11px; color: var(--faint); font-family: var(--mono);
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: 12px;
+  }
+  th {
+    text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--faint); font-weight: 500; padding: 8px 6px;
+    border-bottom: 1px solid var(--line); background: var(--panel-2);
+  }
+  td {
+    padding: 8px 6px; border-bottom: 1px solid var(--line-soft);
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-size: 12px;
+  }
+  .num { text-align: right; }
+  .up { color: var(--accent); }
+  .dn { color: var(--danger); }
+  .name-cell { font-family: var(--sans); }
+  .name-cell .sym { font-family: var(--mono); color: var(--ink); }
+  .name-cell .nm { font-size: 11px; color: var(--faint); margin-top: 1px; }
+
+  .step {
+    display: flex; gap: 10px; padding: 8px 0;
+    border-bottom: 1px solid var(--line-soft); font-size: 12px;
+  }
+  .step:last-child { border-bottom: none; }
+  .step .n {
+    font-family: var(--mono); color: var(--faint); width: 16px; flex-shrink: 0;
+  }
+  .footer-note {
+    margin-top: 12px; font-size: 10px; color: var(--faint);
+    letter-spacing: 0.04em; line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="tag">05b · OPS REFINED</div>
+
+  <header class="top">
+    <div class="brand">
+      <i></i>
+      TossAutoPilot
+      <em>control</em>
+    </div>
+    <nav class="modes">
+      <span class="on">Home</span>
+      <span>Trade</span>
+      <span>Strat</span>
+      <span>Journal</span>
+      <span>Settings</span>
+    </nav>
+    <div class="top-right">
+      <span class="pill ok"><span class="dot"></span> ENGINE</span>
+      <span class="pill paper">PAPER</span>
+      <span>hb 4.1s · seq 1</span>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- LEFT: risk -->
+    <aside class="col">
+      <div class="warn-rail">
+        <div>
+          <strong>GATE POLICY</strong>
+          Unknown data → block. Kill switch overrides all order paths.
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span>Risk</span><span>F4</span></div>
+        <div class="panel-b">
+          <div class="kv"><span class="k">Kill switch</span><span class="v ok">OFF</span></div>
+          <div class="kv"><span class="k">Max symbol weight</span><span class="v">12%</span></div>
+          <div class="kv"><span class="k">Daily loss limit</span><span class="v">-2.0%</span></div>
+          <div class="kv"><span class="k">High-value threshold</span><span class="v">₩100,000,000</span></div>
+          <div class="kv"><span class="k">Max order amount</span><span class="v">₩3,000,000,000</span></div>
+          <div class="kv"><span class="k">Mode</span><span class="v">PAPER</span></div>
+          <div class="actions">
+            <button type="button" class="btn primary">Arm live…</button>
+            <button type="button" class="btn danger">Kill all orders</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span>Engine</span><span>worker</span></div>
+        <div class="panel-b">
+          <div class="kv"><span class="k">State</span><span class="v ok">RUNNING</span></div>
+          <div class="kv"><span class="k">Quotes poll</span><span class="v">5.0s</span></div>
+          <div class="kv"><span class="k">Portfolio poll</span><span class="v">8.0s</span></div>
+          <div class="kv"><span class="k">accountSeq</span><span class="v">1</span></div>
+          <div class="kv"><span class="k">Rate headroom</span><span class="v">72%</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- CENTER: equity + holdings -->
+    <main class="col">
+      <div class="panel">
+        <div class="panel-h">
+          <span>Equity</span>
+          <span>mid 1,384.20 · 12s</span>
+        </div>
+        <div class="panel-b">
+          <div class="equity-head">
+            <span class="section-label" style="margin:0">Total assets</span>
+            <div class="seg"><b class="on">KRW</b><b>USD</b></div>
+          </div>
+          <div class="hero">128,442,900</div>
+          <div class="hero-sub">+1,240,000 today · +0.97% · cumulative +10.7%</div>
+          <div class="metrics">
+            <div class="metric">
+              <div class="k">Stocks</div>
+              <div class="v">86,210,500</div>
+              <div class="s">₩72.1M · $10,192</div>
+            </div>
+            <div class="metric">
+              <div class="k">Cash</div>
+              <div class="v">42,232,400</div>
+              <div class="s">₩42.2M · $18,420</div>
+            </div>
+            <div class="metric">
+              <div class="k">KRW book</div>
+              <div class="v">72,100,000</div>
+              <div class="s">domestic holdings</div>
+            </div>
+            <div class="metric">
+              <div class="k">USD book</div>
+              <div class="v">$10,192.40</div>
+              <div class="s">US holdings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span>Holdings</span><span>3 positions</span></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Symbol</th>
+              <th class="num">Qty</th>
+              <th class="num">Last</th>
+              <th class="num">Value</th>
+              <th class="num">P/L</th>
+              <th class="num">Wgt</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="name-cell"><div class="sym">005930</div><div class="nm">삼성전자</div></td>
+              <td class="num">580</td>
+              <td class="num">72,100</td>
+              <td class="num">42,100,000</td>
+              <td class="num up">+8.2%</td>
+              <td class="num">32.8%</td>
+            </tr>
+            <tr>
+              <td class="name-cell"><div class="sym">AAPL</div><div class="nm">Apple</div></td>
+              <td class="num">45</td>
+              <td class="num">228.40</td>
+              <td class="num">$10,278</td>
+              <td class="num up">+4.1%</td>
+              <td class="num">11.0%</td>
+            </tr>
+            <tr>
+              <td class="name-cell"><div class="sym">000660</div><div class="nm">SK하이닉스</div></td>
+              <td class="num">80</td>
+              <td class="num">230,000</td>
+              <td class="num">18,400,000</td>
+              <td class="num dn">-1.2%</td>
+              <td class="num">14.3%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </main>
+
+    <!-- RIGHT: tape + actions -->
+    <aside class="col">
+      <div class="panel">
+        <div class="panel-h"><span>Watch tape</span><span>5.0s</span></div>
+        <table>
+          <thead>
+            <tr><th>Sym</th><th class="num">Last</th><th class="num">Δ</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>005930</td><td class="num">72,100</td><td class="num up">+0.4%</td></tr>
+            <tr><td>AAPL</td><td class="num">228.40</td><td class="num dn">-0.2%</td></tr>
+            <tr><td>NVDA</td><td class="num">118.20</td><td class="num up">+1.1%</td></tr>
+            <tr><td>000660</td><td class="num">230,000</td><td class="num dn">-0.6%</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h"><span>Checklist</span><span>pre-live</span></div>
+        <div class="panel-b">
+          <div class="step"><span class="n">01</span><span>Gates review · kill path verified</span></div>
+          <div class="step"><span class="n">02</span><span>Strategy queue · autoSend off</span></div>
+          <div class="step"><span class="n">03</span><span>Paper order round-trip</span></div>
+          <div class="actions">
+            <button type="button" class="btn primary">Open trading view</button>
+          </div>
+          <p class="footer-note">
+            Judgment unavailable = BLOCK.<br />
+            Auto-send is opt-in per strategy.
+          </p>
+        </div>
+      </div>
+    </aside>
+  </div>
+</body>
+</html>

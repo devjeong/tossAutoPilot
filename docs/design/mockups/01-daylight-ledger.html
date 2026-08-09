@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>01 · Daylight Ledger — TossAutoPilot</title>
+<style>
+  :root {
+    --bg: #f3efe6;
+    --surface: #fffcf6;
+    --ink: #1a1917;
+    --muted: #6f6a62;
+    --rule: #ddd4c5;
+    --accent: #0c6b4d;
+    --rise: #0c6b4d;
+    --fall: #b42318;
+    --warn: #b54708;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    width: 1440px;
+    min-height: 900px;
+  }
+  .shell { min-height: 900px; display: grid; grid-template-rows: 56px 1fr 32px; }
+  .titlebar {
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px; background: var(--surface);
+    border-bottom: 1px solid var(--rule);
+  }
+  .brand { font-weight: 600; letter-spacing: 0.02em; display: flex; align-items: center; gap: 8px; }
+  .brand i { width: 10px; height: 10px; border-radius: 50%; background: var(--accent); display: block; }
+  .sub { font-size: 11px; color: var(--muted); letter-spacing: 0.12em; text-transform: uppercase; }
+  .nav { display: flex; gap: 18px; margin-left: 24px; }
+  .nav span { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .nav .on { color: var(--ink); font-weight: 600; }
+  .right { margin-left: auto; display: flex; gap: 12px; align-items: center; font-size: 12px; color: var(--muted); }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
+  .content { padding: 20px 24px; display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; align-content: start; }
+  .card {
+    background: var(--surface); border: 1px solid var(--rule);
+    border-radius: 2px; padding: 18px 20px;
+  }
+  .span2 { grid-column: 1 / -1; }
+  .label { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .hero { font-size: 48px; font-weight: 500; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .unit { font-size: 16px; color: var(--muted); margin-left: 6px; }
+  .toggle { display: inline-flex; border: 1px solid var(--rule); }
+  .toggle b { font-size: 11px; padding: 5px 12px; font-weight: 500; letter-spacing: 0.06em; }
+  .toggle .on { background: var(--accent); color: #fff; }
+  .pills { display: flex; gap: 14px; margin: 12px 0 16px; font-size: 13px; }
+  .rise { color: var(--rise); }
+  .strip { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; padding-top: 14px; border-top: 1px solid var(--rule); }
+  .strip .v { font-family: ui-monospace, monospace; font-size: 14px; margin-top: 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); padding: 8px 6px; border-bottom: 1px solid var(--rule); font-weight: 500; }
+  td { padding: 10px 6px; border-bottom: 1px solid var(--rule); font-variant-numeric: tabular-nums; }
+  .num { text-align: right; font-family: ui-monospace, monospace; }
+  .mono { font-family: ui-monospace, monospace; }
+  .statusbar { display: flex; align-items: center; gap: 8px; padding: 0 24px; border-top: 1px solid var(--rule); font-size: 11px; color: var(--muted); }
+  .spacer { flex: 1; }
+  .tag { position: fixed; top: 12px; right: 12px; background: #1a1917; color: #f3efe6; font-size: 11px; padding: 6px 10px; letter-spacing: 0.06em; z-index: 9; }
+  ul { list-style: none; display: grid; gap: 8px; font-size: 13px; color: var(--muted); }
+  ul strong { color: var(--ink); }
+</style>
+</head>
+<body>
+  <div class="tag">01 · DAYLIGHT LEDGER</div>
+  <div class="shell">
+    <header class="titlebar">
+      <div class="brand"><i></i> TossAutoPilot</div>
+      <span class="sub">auto pilot</span>
+      <nav class="nav">
+        <span class="on">홈</span><span>트레이딩</span><span>전략</span><span>주문</span><span>저널</span><span>설정</span>
+      </nav>
+      <div class="right"><span class="dot"></span> paper · running · hb 4s · you@mail.com</div>
+    </header>
+    <main class="content">
+      <section class="card span2">
+        <div class="head">
+          <span class="label">총 자산</span>
+          <span class="label">12s 전 · 환율 1,384.20</span>
+        </div>
+        <div class="toggle"><b class="on">원화</b><b>달러</b></div>
+        <div style="margin-top:8px"><span class="hero mono">128,442,900</span><span class="unit">원</span></div>
+        <div class="pills"><span class="rise">오늘 +1,240,000원 · +0.97%</span><span class="rise">누적 +12,400,000원 (+10.7%)</span></div>
+        <div class="strip">
+          <div><div class="label">주식 평가</div><div class="v">86,210,500 원</div></div>
+          <div><div class="label">예수금</div><div class="v">42,232,400 원</div></div>
+          <div><div class="label">주식 원화</div><div class="v">₩72,100,000</div></div>
+          <div><div class="label">주식 달러</div><div class="v">$10,192.40</div></div>
+          <div><div class="label">환율 mid</div><div class="v">1,384.20</div></div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="head"><span class="label">보유 종목</span><span class="label">4</span></div>
+        <table>
+          <thead><tr><th>종목</th><th class="num">평가</th><th class="num">손익</th><th class="num">비중</th></tr></thead>
+          <tbody>
+            <tr><td><div class="mono">005930</div><div class="label">삼성전자</div></td><td class="num">42,100,000</td><td class="num rise">+8.2%</td><td class="num">32.8%</td></tr>
+            <tr><td><div class="mono">AAPL</div><div class="label">Apple</div></td><td class="num">14,110,500</td><td class="num rise">+4.1%</td><td class="num">11.0%</td></tr>
+            <tr><td><div class="mono">000660</div><div class="label">SK하이닉스</div></td><td class="num">18,400,000</td><td class="num" style="color:var(--fall)">-1.2%</td><td class="num">14.3%</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="card">
+        <div class="head"><span class="label">세션 · 리스크</span></div>
+        <ul>
+          <li>엔진 <strong>paper · running</strong></li>
+          <li>accountSeq <strong class="mono">1</strong></li>
+          <li>킬 스위치 <strong>PASS</strong></li>
+          <li>비중 상한 12% · 일손 -2%</li>
+        </ul>
+      </section>
+      <section class="card span2">
+        <div class="head"><span class="label">관심 · 시세</span><span class="label">갱신 3s · interval 5000ms</span></div>
+        <table>
+          <thead><tr><th>심볼</th><th>시장</th><th class="num">현재가</th><th>통화</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">005930</td><td>KR</td><td class="num">72,100</td><td>KRW</td></tr>
+            <tr><td class="mono">AAPL</td><td>US</td><td class="num">228.40</td><td>USD</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+    <footer class="statusbar"><span class="mono">openapi.tossinvest.com</span><span class="spacer"></span><span>calm · precise · no decoration</span></footer>
+  </div>
+</body>
+</html>

@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<title>04 · Glass Command — TossAutoPilot</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    width: 1440px; min-height: 900px;
+    font-family: "SF Pro Display", "Segoe UI", system-ui, sans-serif;
+    color: #f4f7fb;
+    background:
+      radial-gradient(900px 500px at 15% 20%, rgba(99,102,241,0.45), transparent 55%),
+      radial-gradient(700px 400px at 85% 10%, rgba(16,185,129,0.35), transparent 50%),
+      radial-gradient(600px 500px at 70% 90%, rgba(56,189,248,0.25), transparent 45%),
+      #0b1020;
+  }
+  .tag { position: fixed; top: 12px; right: 12px; backdrop-filter: blur(12px); background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); font-size: 11px; padding: 8px 12px; border-radius: 999px; z-index: 9; letter-spacing: 0.06em; }
+  .wrap { padding: 24px 28px; }
+  header {
+    display: flex; align-items: center; gap: 16px; margin-bottom: 20px;
+    backdrop-filter: blur(18px); background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12); border-radius: 18px; padding: 12px 18px;
+  }
+  .brand { font-weight: 600; letter-spacing: 0.04em; }
+  .nav { display: flex; gap: 6px; margin-left: 12px; }
+  .nav span { font-size: 12px; padding: 8px 12px; border-radius: 10px; color: rgba(244,247,251,0.55); }
+  .nav .on { background: rgba(255,255,255,0.12); color: #fff; }
+  .status { margin-left: auto; font-size: 12px; color: rgba(244,247,251,0.7); }
+  .status i { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #34d399; margin-right: 6px; box-shadow: 0 0 10px #34d399; }
+  .grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; }
+  .glass {
+    backdrop-filter: blur(20px);
+    background: linear-gradient(145deg, rgba(255,255,255,0.10), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.14);
+    border-radius: 22px; padding: 22px 24px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+  }
+  .span2 { grid-column: 1 / -1; }
+  .label { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(244,247,251,0.55); }
+  .hero { font-size: 46px; font-weight: 600; letter-spacing: -0.03em; margin: 10px 0; font-variant-numeric: tabular-nums; }
+  .seg { display: inline-flex; padding: 3px; border-radius: 999px; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.1); }
+  .seg b { font-size: 11px; padding: 6px 14px; border-radius: 999px; color: rgba(244,247,251,0.55); font-weight: 500; }
+  .seg .on { background: rgba(255,255,255,0.16); color: #fff; }
+  .pills { display: flex; gap: 10px; margin: 10px 0 18px; font-size: 13px; }
+  .up { color: #6ee7b7; }
+  .strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .mini { background: rgba(0,0,0,0.2); border-radius: 14px; padding: 12px; border: 1px solid rgba(255,255,255,0.08); }
+  .mini .v { font-size: 15px; font-weight: 600; margin-top: 6px; font-variant-numeric: tabular-nums; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; }
+  th { text-align: left; font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(244,247,251,0.45); padding: 8px 6px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  td { padding: 10px 6px; border-bottom: 1px solid rgba(255,255,255,0.06); font-variant-numeric: tabular-nums; }
+  .num { text-align: right; }
+  .mono { font-family: ui-monospace, monospace; }
+</style>
+</head>
+<body>
+  <div class="tag">04 · GLASS COMMAND</div>
+  <div class="wrap">
+    <header>
+      <div class="brand">TossAutoPilot</div>
+      <nav class="nav">
+        <span class="on">Command</span><span>Trade</span><span>Signals</span><span>Audit</span><span>Config</span>
+      </nav>
+      <div class="status"><i></i>engine running · paper · hb 4s</div>
+    </header>
+    <div class="grid">
+      <section class="glass span2">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span class="label">Total equity</span>
+          <div class="seg"><b class="on">KRW</b><b>USD</b></div>
+        </div>
+        <div class="hero">₩128,442,900</div>
+        <div class="pills"><span class="up">Today +₩1,240,000 · +0.97%</span><span class="up">YTD +10.7%</span></div>
+        <div class="strip">
+          <div class="mini"><div class="label">Stocks</div><div class="v">86.2M</div></div>
+          <div class="mini"><div class="label">Cash</div><div class="v">42.2M</div></div>
+          <div class="mini"><div class="label">USD book</div><div class="v">$10.2k</div></div>
+          <div class="mini"><div class="label">FX mid</div><div class="v">1,384.20</div></div>
+        </div>
+      </section>
+      <section class="glass">
+        <div class="label">Positions</div>
+        <table>
+          <thead><tr><th>Asset</th><th class="num">Value</th><th class="num">P/L</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mono">005930</span> 삼성전자</td><td class="num">42.1M</td><td class="num up">+8.2%</td></tr>
+            <tr><td><span class="mono">AAPL</span> Apple</td><td class="num">$10.3k</td><td class="num up">+4.1%</td></tr>
+            <tr><td><span class="mono">000660</span> 하이닉스</td><td class="num">18.4M</td><td class="num" style="color:#fca5a5">-1.2%</td></tr>
+          </tbody>
+        </table>
+      </section>
+      <section class="glass">
+        <div class="label">Ops · Risk</div>
+        <table>
+          <tbody>
+            <tr><td>Mode</td><td class="num mono">paper</td></tr>
+            <tr><td>Kill switch</td><td class="num up">OFF</td></tr>
+            <tr><td>Max weight</td><td class="num">12%</td></tr>
+            <tr><td>Daily loss</td><td class="num">-2%</td></tr>
+            <tr><td>Account seq</td><td class="num mono">1</td></tr>
+          </tbody>
+        </table>
+        <div class="label" style="margin-top:16px">Watch quotes</div>
+        <table>
+          <tr><td class="mono">005930</td><td class="num">72,100</td></tr>
+          <tr><td class="mono">AAPL</td><td class="num">228.40</td></tr>
+        </table>
+      </section>
+    </div>
+  </div>
+</body>
+</html>

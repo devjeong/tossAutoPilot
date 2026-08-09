@@ -1,0 +1,30 @@
+{
+  "name": "tossautopilot",
+  "private": true,
+  "version": "0.1.0",
+  "description": "TossAutoPilot — 토스증권 Open API 자동매매 웹 서비스",
+  "packageManager": "pnpm@10.22.0",
+  "scripts": {
+    "dev": "pnpm --filter @tosspilot/web dev",
+    "dev:web": "pnpm --filter @tosspilot/web dev",
+    "dev:engine": "pnpm --filter @tosspilot/engine dev",
+    "build": "pnpm -r --filter \"./packages/*\" build && pnpm --filter @tosspilot/web build && pnpm --filter @tosspilot/engine build",
+    "build:packages": "pnpm -r --filter \"./packages/*\" build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r --filter \"./packages/*\" test",
+    "lint": "pnpm -r lint",
+    "db:generate": "pnpm --filter @tosspilot/db generate",
+    "db:push": "node scripts/db-push.mjs",
+    "env:check": "node scripts/check-env.mjs",
+    "env:probe": "node scripts/probe-env.mjs",
+    "env:normalize": "node scripts/normalize-env.mjs",
+    "env:fix-db": "node scripts/fix-database-url.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "dotenv": "^17.4.2",
+    "playwright": "^1.62.1"
+  }
+}

@@ -1,0 +1,36 @@
+# dependencies
+node_modules
+.pnpm-store
+
+# build
+dist
+.next
+out
+build
+*.tsbuildinfo
+
+# env
+.env
+.env.*
+!.env.example
+
+# logs / OS
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# test / coverage
+coverage
+
+# drizzle
+drizzle/meta
+
+# misc
+.turbo
+.vercel
