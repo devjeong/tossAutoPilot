@@ -6,6 +6,7 @@ import { createEngineSupabase } from './supabase.js'
 import { EngineLoop } from './loop.js'
 import { handleMarketCandles, handleMarketSearch } from './market-api.js'
 import { handleConnectionTest, handleReportGenerate } from './toss-gateway.js'
+import { fetchLivePortfolio, fetchLiveQuotes } from './portfolio-fetch.js'
 
 loadEngineEnv()
 const cfg = getEngineConfig()
@@ -205,6 +206,79 @@ const server = createServer((req, res) => {
       return
     }
 
+    if (req.method === 'POST' && url.pathname === '/internal/toss/portfolio') {
+      if (!checkInternalAuth(req)) {
+        json(res, 401, { ok: false, error: 'unauthorized' })
+        return
+      }
+      if (!supabase) {
+        json(res, 503, { ok: false, error: 'engine supabase not configured' })
+        return
+      }
+      let body: { userId?: string; persist?: boolean }
+      try {
+        body = JSON.parse(await readBody(req)) as typeof body
+      } catch {
+        json(res, 400, { ok: false, error: 'invalid json' })
+        return
+      }
+      if (!body.userId) {
+        json(res, 400, { ok: false, error: 'userId required' })
+        return
+      }
+      const result = await fetchLivePortfolio({
+        supabase,
+        config: cfg,
+        masterKey: cfg.credentialsMasterKey,
+        userId: body.userId,
+        persist: body.persist !== false
+      })
+      json(res, result.ok ? 200 : 502, {
+        ok: result.ok,
+        snapshot: result.snapshot,
+        lastError: result.lastError,
+        polledAt: result.polledAt,
+        via: result.via
+      })
+      return
+    }
+
+    if (req.method === 'POST' && url.pathname === '/internal/toss/quotes') {
+      if (!checkInternalAuth(req)) {
+        json(res, 401, { ok: false, error: 'unauthorized' })
+        return
+      }
+      if (!supabase) {
+        json(res, 503, { ok: false, error: 'engine supabase not configured' })
+        return
+      }
+      let body: { userId?: string; persist?: boolean }
+      try {
+        body = JSON.parse(await readBody(req)) as typeof body
+      } catch {
+        json(res, 400, { ok: false, error: 'invalid json' })
+        return
+      }
+      if (!body.userId) {
+        json(res, 400, { ok: false, error: 'userId required' })
+        return
+      }
+      const result = await fetchLiveQuotes({
+        supabase,
+        config: cfg,
+        masterKey: cfg.credentialsMasterKey,
+        userId: body.userId,
+        persist: body.persist !== false
+      })
+      json(res, result.ok ? 200 : 502, {
+        ok: result.ok,
+        snapshot: result.snapshot,
+        error: result.error ?? null,
+        via: result.via
+      })
+      return
+    }
+
     if (req.method === 'POST' && url.pathname === '/internal/toss/report') {
       if (!checkInternalAuth(req)) {
         json(res, 401, { ok: false, error: 'unauthorized' })
@@ -269,6 +343,8 @@ server.listen(cfg.port, cfg.host, () => {
           '/internal/market/candles',
           '/internal/market/search',
           '/internal/toss/connection-test',
+          '/internal/toss/portfolio',
+          '/internal/toss/quotes',
           '/internal/toss/report'
         ],
         homePc:

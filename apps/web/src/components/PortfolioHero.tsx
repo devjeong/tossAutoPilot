@@ -25,24 +25,29 @@ export function PortfolioHero({ initial, initialError, initialPolledAt }: Props)
 
   const refresh = useCallback(async () => {
     try {
-      const res = await fetch('/api/portfolio')
+      // live: 엔진 → 토스 즉시 조회
+      const res = await fetch('/api/portfolio?live=1')
       const data = (await res.json()) as {
         ok: boolean
         snapshot?: PortfolioSnapshotDto | null
         lastError?: string | null
         polledAt?: string | null
+        via?: string
+        engineError?: string
       }
-      if (!data.ok) return
-      setSnap(data.snapshot ?? null)
-      setError(data.lastError ?? null)
-      setPolledAt(data.polledAt ?? null)
-    } catch {
-      /* ignore */
+      if (data.snapshot) {
+        setSnap(data.snapshot)
+        setPolledAt(data.polledAt ?? new Date().toISOString())
+      }
+      setError(data.lastError || data.engineError || null)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }, [])
 
   useEffect(() => {
-    const t = setInterval(() => void refresh(), 4000)
+    void refresh()
+    const t = setInterval(() => void refresh(), 5000)
     return () => clearInterval(t)
   }, [refresh])
 

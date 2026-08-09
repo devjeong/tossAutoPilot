@@ -37,19 +37,20 @@ export function WatchlistQuotesCard({ initialItems, initialSnapshot }: Props) {
 
   const refreshQuotes = useCallback(async () => {
     try {
-      const res = await fetch('/api/quotes')
+      const res = await fetch('/api/quotes?live=1')
       const data = (await res.json()) as {
         ok: boolean
         snapshot?: Snapshot | null
       }
-      if (data.ok) setSnapshot(data.snapshot ?? null)
+      if (data.snapshot) setSnapshot(data.snapshot)
     } catch {
       /* ignore */
     }
   }, [])
 
   useEffect(() => {
-    const t = setInterval(() => void refreshQuotes(), 3000)
+    void refreshQuotes()
+    const t = setInterval(() => void refreshQuotes(), 5000)
     return () => clearInterval(t)
   }, [refreshQuotes])
 
